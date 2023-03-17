@@ -19,25 +19,31 @@ void inicializar_cola(Cola *cola, int tam_cola)
 		perror("El tamaño de la cola debe de ser positivo");
 		exit(1);
 	}
+
+	cola->tam_cola = tam_cola;
 	cola->datos = (int*)malloc(sizeof(int)*tam_cola);
+
 	if(cola->datos == NULL){
 		perror("Puntero a la cola nulo");
 		exit(1);
 	}
-	cola->tam_cola = tam_cola;
+
+	cola->head = 0;
+	cola->tail = 0;
+
 	if(sem_init(&cola->num_huecos,0,tam_cola)== -1){
-		perror("Error al inicializar el semaforo hay_espacio.");
+		perror("Error al inicializar el semaforo num_huecos.");
 		exit(1);
 	}
 	if(sem_init(&cola->num_ocupados,0,0) == -1){
-		perror("Error al inicializar el semaforo hay_algo.");
+		perror("Error al inicializar el semaforo num_ocupados.");
 		exit(1);
 	}
 	if( pthread_mutex_init(&cola->mutex_head,NULL) == -1){
 		perror("Error al inicializar el mutex.");
 		exit(1);
 
-
+		
 	}
 }
 
@@ -45,12 +51,16 @@ void inicializar_cola(Cola *cola, int tam_cola)
 void destruir_cola(Cola *cola)
 {
     // A RELLENAR
+
+	
+
 	if(cola == NULL){
 		perror("Puntero a la cola es nulo");
 		exit(1);
 	}
 	
 	if(cola->datos != NULL) free(cola->datos);
+
 	if(sem_destroy(&cola->num_huecos) == -1){
 		perror("Error al destruir el semaforo hay_espacio.");
 		exit(1);
@@ -61,12 +71,12 @@ void destruir_cola(Cola *cola)
 		exit(1);
 	}
 	if(pthread_mutex_destroy(&cola->mutex_head) == -1){
-		perror("Error al destruir el mutex.");
+		perror("Error al destruir el mutex cabeza.");
 		exit(1);
 	}	
 
     	if(pthread_mutex_destroy(&cola->mutex_tail) == -1){
-		perror("Error al destruir el mutex.");
+		perror("Error al destruir el mutex cola.");
 		exit(1);
 	}	
 }
@@ -74,21 +84,69 @@ void destruir_cola(Cola *cola)
 void insertar_dato_cola(Cola *cola, dato_cola * dato)
 {
     // A RELLENAR
-    |
-    |
-    |
-    |
+    if (cola == NULL) {
+        perror("Cola no inicializada");
+        exit(EXIT_FAILURE);
+    }
+
+    if (sem_wait(cola->num_huecos) < 0) {
+        perror("Al esperar semáforo");
+        exit(EXIT_FAILURE);
+    }
+
+    if (pthread_mutex_lock(&cola->mutex_head) != 0) {
+        perror("Al bloquear mutex");
+        exit(EXIT_FAILURE);
+    }
+
+    cola -> datos[cola -> head] = dato;
+    cola -> head = (cola -> head + 1) % cola -> tam_cola;
+
+    if (pthread_mutex_unlock(&cola->mutex_head) != 0) {
+        perror("Al desbloquear mutex");
+        exit(EXIT_FAILURE);
+    }
+	
+    if (sem_post(&cola->num_ocupados) < 0) {
+        perror("Al incrementar semáforo");
+        exit(EXIT_FAILURE);
+    }
 }
 
 
 dato_cola * obtener_dato_cola(Cola *cola)
 {
-    dato_cola *p;
     // A RELLENAR
-    |
-    |
-    |
-    |
+	dato_cola *datoExtraido;
 
-    return(p);
+	if (cola == NULL) {
+        perror("Cola no inicializada");
+        exit(EXIT_FAILURE);
+    }
+
+    if (sem_wait(&cola->num_ocupados) < 0) {
+        perror("Al esperar semáforo");
+        exit(EXIT_FAILURE);
+    }
+
+    if (pthread_mutex_lock(&cola->mutex_head) != 0) {
+        perror("Al bloquear mutex");
+        exit(EXIT_FAILURE);
+    }
+
+	datoExtraido = cola->datos[cola->tail];
+	cola->tail = (cola->tail+1)%cola->tam_cola;
+
+    if (pthread_mutex_unlock(&cola->mutex_head) != 0) {
+        perror("Al desbloquear mutex");
+        exit(EXIT_FAILURE);
+    }
+	
+    if (sem_post(&cola->num_ocupados) < 0) {
+        perror("Al incrementar semáforo");
+        exit(EXIT_FAILURE);
+    }
+
+	return datoExtraido;
+   
 }
