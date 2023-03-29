@@ -51,10 +51,57 @@ FILE * fp;
 void procesa_argumentos(int argc,char *argv[])
 {
     // A RELLENAR
-    |
-    |
-    |
-    |
+      if (argc != 6) {
+        fprintf(stderr, "El número de argumentos es incorrecto.\n");
+        fprintf(stderr, "Uso: %s <ip_sislog> <puerto_sislog> <t|u> <nhilos> <fich_eventos>\n", argv[0]);
+        exit(1);
+    }
+
+    puerto_syslog = atoi(argv[1]);
+    if (puerto_syslog < 1024 || puerto_syslog > 65535) {
+        fprintf(stderr, "El número de puerto debe estar entre 1024 y 65535.\n");
+        exit(1);
+    }
+
+    char tipo_socket = * argv[2];
+    if (tipo_socket != 't' && tipo_socket != 'u') {
+        fprintf(stderr, "El tipo de socket debe ser 't' o 'u'.\n");
+        exit(1);
+    }
+
+    else if(tipo_socket == 't')
+        es_stream = CIERTO;
+    
+    else if (tipo_socket == 'u')
+        es_stream = FALSO;  
+
+    nhilos = atoi(argv[4]);
+    if (nhilos <= 0) {
+        fprintf(stderr, "El número de hilos debe ser un número positivo.\n");
+        exit(1);
+    }
+    
+    // verificar si el archivo existe
+    if (access(fich_eventos, F_OK) != -1) {
+        // abrir el archivo en modo de lectura
+        FILE* file = fopen(fich_eventos, "r");
+        
+        // verificar si el archivo se abrió correctamente
+        if (file == NULL) {
+            fprintf(stderr, "Error al abrir el archivo.\n");
+            exit(1);
+        }
+        
+        // hacer algo con el archivo
+        
+        // cerrar el archivo
+        fclose(file);
+    } else {
+        fprintf(stderr, "El archivo %s no existe.\n", fich_eventos);
+        exit(EXIT_FAILURE);
+    }
+
+
 }
 
 void salir_bien(int s)

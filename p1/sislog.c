@@ -151,7 +151,17 @@ void procesa_argumentos(int argc, char *argv[])
     }
 
     // Extraer los argumentos y validar sus valores
-    int puerto = atoi(argv[1]);
+    
+    if(valida_numero(argv[1])){
+        puerto = atoi(argv[1]);
+    }
+
+    else{
+        fprintf(stderr, "El número de puerto debe ser un número.\n");
+        exit(1);
+    }
+
+
     if (puerto < 1024 || puerto > 65535) {
         fprintf(stderr, "El número de puerto debe estar entre 1024 y 65535.\n");
         exit(1);
@@ -169,19 +179,42 @@ void procesa_argumentos(int argc, char *argv[])
     else if (tipo_socket == 'u')
         es_stream = FALSO;  
 
-    int tam_cola = atoi(argv[3]);
+    if(valida_numero(argv[3])){
+        tam_cola = atoi(argv[3]);
+    }
+
+    else{
+        fprintf(stderr, "El tamaño de la cola debe ser un número.\n");
+        exit(1);
+    }
+
     if (tam_cola <= 0) {
         fprintf(stderr, "El tamaño de la cola debe ser un número positivo.\n");
         exit(1);
     }
 
-    int num_hilos_aten = atoi(argv[4]);
+    if(valida_numero(argv[4])){
+        num_hilos_aten = atoi(argv[4]);
+    }
+
+    else{
+        fprintf(stderr, "El número de hilos de atención debe ser un número.\n");
+        exit(1);
+    }
+
     if (num_hilos_aten <= 0) {
         fprintf(stderr, "El número de hilos de atención debe ser un número positivo.\n");
         exit(1);
     }
+    if(valida_numero(argv[5])){
+        num_hilos_work = atoi(argv[5]);
+    }
 
-    int num_hilos_work = atoi(argv[5]);
+    else{
+        fprintf(stderr, "El número de hilos de atención debe ser un número.\n");
+        exit(1);
+    }
+    
     if (num_hilos_work <= 0) {
         fprintf(stderr, "El número de hilos trabajadores debe ser un número positivo.\n");
         exit(1);
@@ -378,7 +411,8 @@ int main(int argc, char *argv[])
         *id = i;
 
         // Crear el hilo pthread_create
-        Worker(id);
+        pthread_create(*(hilos_work+i), NULL, (void *)Worker, &id);
+
     }
 
     // Esperamos a que terminen todos los hilos
