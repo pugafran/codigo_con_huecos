@@ -89,7 +89,7 @@ void insertar_dato_cola(Cola *cola, dato_cola * dato)
         exit(EXIT_FAILURE);
     }
 
-    if (sem_wait(cola->num_huecos) < 0) {
+    if (sem_wait(&cola->num_huecos) < 0) {
         perror("Al esperar semáforo");
         exit(EXIT_FAILURE);
     }
