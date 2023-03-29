@@ -4,6 +4,8 @@
 #include <unistd.h>
 #include "util.h"
 
+#include <arpa/inet.h>
+
 // Función de utilidad que determina si los caracteres de una cadena son todos numericos
 int valida_numero(char *str) {
     // A RELLENAR
@@ -12,6 +14,7 @@ int valida_numero(char *str) {
     for (int i = 0; str[i] != '\0'; i++) {
         // Si el carácter no es un dígito numérico, devuelve 0
         if (!isdigit(str[i])) {
+            log_debug(printf("%s del valor %s no es un número.\n", str[i], str));
             return 0;
         }
     }
@@ -24,10 +27,15 @@ int valida_ip(char *ip)
 {
     // Comprueba si la cadena contiene una ip válida
     // A RELLENAR
-    |
-    |
-    |
-    |
+    struct in_addr addr;
+    
+    // Convertir la dirección IP en formato de cadena a una estructura de in_addr
+    if (inet_pton(AF_INET, ip, &addr) <= 0) {
+        log_debug(printf("%s no es una dirección IP válida.\n", ip));
+        return 0;
+    }
+
+    return 1;
 }
 
 // Función de utilidad, para generar los tiempos aleatorios entre un
