@@ -48,6 +48,11 @@ char *fich_eventos;
 // handler de archivo
 FILE * fp;
 
+//Mutex para controlar el archivo
+pthread_mutex_t mutex;
+
+struct in_addr addr;
+
 void procesa_argumentos(int argc,char *argv[])
 {
     // A RELLENAR
@@ -57,13 +62,19 @@ void procesa_argumentos(int argc,char *argv[])
         exit(1);
     }
 
-    puerto_syslog = atoi(argv[1]);
+    ip_syslog = argv[1];
+    if (inet_pton(AF_INET, ip_syslog, &addr) <= 0) {
+        fprintf(stderr, "%s no es una dirección IP válida.\n", ip_syslog);
+        return 0;
+    }
+
+    puerto_syslog = atoi(argv[2]);
     if (puerto_syslog < 1024 || puerto_syslog > 65535) {
         fprintf(stderr, "El número de puerto debe estar entre 1024 y 65535.\n");
         exit(1);
     }
 
-    char tipo_socket = * argv[2];
+    char tipo_socket = * argv[3];
     if (tipo_socket != 't' && tipo_socket != 'u') {
         fprintf(stderr, "El tipo de socket debe ser 't' o 'u'.\n");
         exit(1);
@@ -82,20 +93,21 @@ void procesa_argumentos(int argc,char *argv[])
     }
     
     // verificar si el archivo existe
+    fich_eventos = argv[5];
     if (access(fich_eventos, F_OK) != -1) {
         // abrir el archivo en modo de lectura
-        FILE* file = fopen(fich_eventos, "r");
+        FILE* fp = fopen(fich_eventos, "r");
         
         // verificar si el archivo se abrió correctamente
-        if (file == NULL) {
-            fprintf(stderr, "Error al abrir el archivo.\n");
+        if (fp == NULL) {
+            fprintf(stderr, "Error al abrir el archivo %s\n", fich_eventos);
             exit(1);
         }
         
-        // hacer algo con el archivo
+        
         
         // cerrar el archivo
-        fclose(file);
+        fclose(fp);
     } else {
         fprintf(stderr, "El archivo %s no existe.\n", fich_eventos);
         exit(EXIT_FAILURE);
@@ -106,7 +118,10 @@ void procesa_argumentos(int argc,char *argv[])
 
 void salir_bien(int s)
 {
+  pthread_mutex_destroy(&mutex);
   fclose(fp);
+  
+
   exit(0);
 }
 
@@ -116,45 +131,81 @@ void *hilo_lector(datos_hilo *p)
   char buffer[TAMLINEA];
   char *s;
   int sock_dat;
-
+  printf("\nSector hilo 1\n");
+ 
   do
   {
+      printf("\nSector hilo 1.5\n");
       bzero(buffer,TAMLINEA);
+      printf("\nSector hilo 2\n");
       // Leer la siguiente linea del fichero con fgets
       // (haciendo exclusión mutua con otros hilos)
       // El fichero (ya abierto por main) se recibe en uno de los parámetros
       // A RELLENAR -----------------
-      |
-      |
-      |
-      |
-      |
-
+      
+      pthread_mutex_init(&mutex, NULL);
+      printf("\nSector hilo 3\n");
+      pthread_mutex_lock(&mutex);
+      s = fgets(buffer, TAMLINEA, p->fp);
+      pthread_mutex_unlock(&mutex);
+        printf("\nSector hilo 4\n");
       if (s!=NULL)
       {
+          printf("\nSector hilo 4.5\n");
+          printf("%s",s);
           // La IP y puerto del servidor están en una estructura sockaddr_in
           // que se recibe en uno de los parámetros
           if (es_stream)  // Enviar la línea por un socket TCP
           {
             // A RELLENAR
-            |
-            |
-            |
-            |
+            
+            printf("\nSector hilo 4.7\n");
+            sock_dat = socket(PF_INET, SOCK_STREAM, 0);
+            printf("\nSector hilo 4.8\n");
+            ((struct sockaddr_in*) p->dserv)->sin_family = AF_INET;
+            printf("\nSector hilo 4.9\n");
+            ((struct sockaddr_in*) p->dserv)->sin_addr.s_addr = inet_addr(ip_syslog);
+            ((struct sockaddr_in*) p->dserv)->sin_port = htons(puerto_syslog);
+            printf("\nSector hilo 5\n");
+            int conexion = connect(sock_dat, p->dserv, sizeof(*(p->dserv)));
+
+            if (conexion == -1){
+                fprintf(stderr, "Error al conectar con el servidor\n");
+                exit(1);
+            }
+
+            printf("\nSector hilo 6\n");
+            int bytes_enviados = send(sock_dat, s, TAMLINEA, 0); 
+            
+            if (bytes_enviados == -1){
+                fprintf(stderr, "Error al enviar los datos\n");
+                exit(1);
+            }
+
+
 
           }
           else // Enviar la línea por un socket UDP
           {
+            printf("\nSector UDP WTF\n");
             // A RELLENAR
-            |
-            |
-            |
-            |
+            sock_dat = socket(PF_INET, SOCK_DGRAM, 0);
+            ((struct sockaddr_in*) &p->dserv)->sin_family = AF_INET; 
+            ((struct sockaddr_in*) &p->dserv)->sin_addr.s_addr = inet_addr(ip_syslog);
+            ((struct sockaddr_in*) &p->dserv)->sin_port = htons(puerto_syslog);
+
+            int bytes_enviados = sendto(sock_dat, buffer, TAMLINEA, 0, &p->dserv, sizeof(p->dserv));
+
+            if (bytes_enviados == -1){
+                fprintf(stderr, "Error al enviar los datos\n");
+                exit(1);
+            }
 
           }
           close(sock_dat);
           printf("%s",s); // Para depuración, imprimios la línea que hemos enviado
       }
+      
   }
   while(s); // Mientras no se llegue al final del fichero
 }
@@ -168,9 +219,10 @@ void main(int argc, char * argv[])
     register int i;
 
     pthread_t *th;
-    datos_hilo q;
+    datos_hilo *q = NULL;
 
     int sock_dat, enviados;
+    
     struct sockaddr_in d_serv;
 
     socklen_t ldir;
@@ -178,13 +230,12 @@ void main(int argc, char * argv[])
 
     // Instalar la rutina de tratamiento de la señal SIGINT
     // A RELLENAR
-    |
-    |
+    signal(SIGINT, salir_bien);
 
     // Procesar los argumentos de la línea de comandos
     procesa_argumentos(argc,argv);
 
-    printf("IP servidor %s, es_stream=%d\n",ip_syslog,es_stream);
+    printf("IP servidor=%s, es_stream=%d\n",ip_syslog,es_stream);
     if ((fp=fopen(fich_eventos,"r"))==NULL)
     {
       perror("Error al abrir el fichero de eventos");
@@ -193,29 +244,29 @@ void main(int argc, char * argv[])
 
     // creamos espacio para los objetos de datos de hilo
     // A RELLENAR
-    |
-    |
-    |
-    |
+    printf("\nSector 1\n");
+    q = malloc(sizeof(datos_hilo));
+    q->dserv = malloc(sizeof(struct sockaddr));
+    th = (pthread_t *)malloc(nhilos * sizeof(pthread_t));
+    printf("\nSector 2\n");
 
     // incicializamos los datos que le vamos a pasar como parámetro a los hilo_lector
     // (se pasa a todos el mismo parámetro)
     // A RELLENAR
-    |
-    |
-    |
-    |
+    
+    q->fp = fp;
+    printf("\nSector 3\n");
 
     for (i=0;i<nhilos;i++)
     {
       // lanzamos el hilo lector
       // A RELLENAR
-      |
-      |
-      |
+     
+      printf("\nSector 4\n");
+      pthread_create(&th[i], NULL, (void *)hilo_lector, q);
 
     }
-
+    printf("\nSector 5\n");
     // Una vez lanzados todos, hacemos un join sobre cada uno de ellos
     for (i=0;i<nhilos;i++)
     {

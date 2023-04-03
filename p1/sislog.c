@@ -123,10 +123,11 @@ static void handler(int signum)
         // Si se recibe esta señal, hay que terminar "bien"
         // liberando todos los recursos en uso antes de finalizar
         // A RELLENAR
+        printf("\nHANDLER ACTIVADO\n");
         destruir_cola(&cola_eventos);
         free(hilos_aten);
         free(hilos_work);
-
+                printf("\nCola e hilos eliminados\n");
         for (i = 0; i < NUMFACILITIES; i++)
         {
             if (pthread_mutex_destroy(&(mfp[i])) != 0)
@@ -135,6 +136,8 @@ static void handler(int signum)
                 exit(1);
             }
         }
+
+        exit(0);
 
     default:
         pthread_exit(NULL);
@@ -195,6 +198,7 @@ void procesa_argumentos(int argc, char *argv[])
 
     if(valida_numero(argv[4])){
         num_hilos_aten = atoi(argv[4]);
+       
     }
 
     else{
@@ -237,6 +241,7 @@ void *Worker(int *id)
     // Hacemos copia del parámetro recibido
     id_worker = *id;
 
+    
     // y liberamos la memoria reservada para él
     free(id);
 
@@ -248,18 +253,31 @@ void *Worker(int *id)
     // genera en base a ellos la línea a escribir, y la escribe
     // en el fichero que corresponda. Mira "cola.h"
     // para recordar la estructura dato_cola que recibe de la cola
+   
     while (1)
     {
         // A RELLENAR
+        printf("\nWORKER 1\n");
         evt = (dato_cola *) obtener_dato_cola(&cola_eventos);
-        
+        printf("\nWORKER 2\n");
+        printf("La fcking facilidad: %d\n",evt->facilidad);
+        printf("El fcking nivel %d:\n",evt->nivel);
+        printf("El fcking mensaje %s:\n",evt->msg);
         timeraw = time(NULL);
         fechahora = ctime(&timeraw);
 
         fechahora[strlen(fechahora) - 1] = '\0';
-
+        printf("\nWORKER 3\n");
         fp = fopen(facilities_file_names[evt->facilidad],"a");
+
+        if (fp == NULL) {
+            fprintf(stderr, "Error al abrir el archivo %s\n", facilities_file_names[evt->facilidad]);
+            exit(1);
+        }
+
+        printf("\nWORKER 4\n");
         fprintf(fp,"%s:%s:%s:%s\n", facilities_names[evt->facilidad], level_names[evt->nivel], fechahora, evt->msg);
+        printf("\nWORKER 5\n");
     }
 }
 
@@ -267,7 +285,7 @@ void *AtencionPeticiones(param_hilo_aten *q)
 {
     int sock_dat, recibidos;
     struct sockaddr_in d_cliente;
-    socklen_t l_dir = sizeof(d_cliente);
+    
     char msg[100];
     char buffer[TAMMSG];
     char *token;
@@ -280,11 +298,11 @@ void *AtencionPeticiones(param_hilo_aten *q)
     // Información de depuración
     sprintf(msg, "Comienza el Hilo de Atencion de Peticiones %d\n", q->num_hilo);
     log_debug(msg);
-
+  
     // Hacemos copia de los parámetros recibidos
     s = q->s;
     num_hilo = q->num_hilo;
-
+    
     // y liberamos la memoria reservada para el parámetro
     free(q);
 
@@ -296,38 +314,63 @@ void *AtencionPeticiones(param_hilo_aten *q)
         {
             // Aceptar el cliente, leer su mensaje hasta recibirlo entero, y cerrar la conexión
             // A RELLENAR
+            printf("Me cago en tu puta madre TCP 1\n");
+            printf("\n\nSocket datos: %d\n\n",s);
             sock_dat = accept(s, 0, 0);
-            recibidos = recv(sock_dat, buffer, TAMMSG, 0);
+            recibidos = read(sock_dat, buffer, TAMMSG);
+            printf("Me llegó algo 2\n");
+            printf("%s", buffer);
             buffer[recibidos] = 0;
             close(sock_dat);
+            printf("Me cago en tu puta madre TCP 2\n");
         }
 
         else // UDP
         {
             // Recibir el mensaje del datagrama
             // A RELLENAR
-            recibidos = recvfrom(sock_dat, buffer, TAMMSG, 0, (struct sockaddr *) &d_cliente, &l_dir);
+            memset(&d_cliente, 0, sizeof(d_cliente));
+
+            int len;
+            len = sizeof(d_cliente);
+
+            printf("Me cago en tu puta madre UDP 1\n");
+            if (recibidos = recvfrom(sock_dat, buffer, TAMMSG, 0, (struct sockaddr *) &d_cliente, &len) == -1){
+                fprintf(stderr, "Error al recibir vía UDP\n");
+                exit(1);
+            }
+            buffer[recibidos] = 0;
+            printf("Me cago en tu puta madre UDP 2\n");
+            close(sock_dat);
         }
         // Una vez recibido el mensaje, es necesario separar sus partes,
         // guardarlos en la estructura adecuada, y poner esa estructura en la cola
         // de sincronización.
         // A RELLENAR
-        token = strtok_r(p, ":", &loc);
+        // Las siguientes líneas de código deben estar dentro del bucle while, ya que se requiere una nueva estructura para cada mensaje recibido
+        printf("Hola");
 
-            token = strtok_r(NULL, ":", &loc);
-            printf("\nFacilidad: %s\n", token);
-            p->facilidad = token;
-
-            token = strtok_r(NULL, ":", &loc);
-            printf("\nNivel: %s\n", token);
-            p->nivel = token;
-        
-            token = strtok_r(NULL, ":", &loc);
-            printf("\nMsg: %s\n", token);
-            strcpy(p->msg, token);
-
+        p = (dato_cola *)malloc(sizeof(dato_cola));
+        //p->facilidad = malloc(sizeof(dato_cola));
+    
         
 
+        token = strtok_r(buffer, ":", &loc);
+        printf("%s",token);
+        p->facilidad = atoi(token); // Se debe convertir a entero
+
+        token = strtok_r(NULL, ":", &loc);
+        printf("%s",token);
+        p->nivel = atoi(token); // Se debe convertir a entero
+
+        token = strtok_r(NULL, ":", &loc);
+        strcpy(p->msg, token);
+
+            printf("\nSALÍ\n");
+
+        insertar_dato_cola(&cola_eventos,p);
+
+        printf("\nDato insertado\n");
     }
 }
 
@@ -344,7 +387,7 @@ int main(int argc, char *argv[])
     int *id=NULL;        // Para pasar el identificador a cada hilo trabajador
     int sock_pasivo;
     struct sockaddr_in d_local;
-    param_hilo_aten *q;
+    param_hilo_aten *q = NULL;
 
     procesa_argumentos(argc, argv);
 
@@ -360,20 +403,38 @@ int main(int argc, char *argv[])
     {
         // A RELLENAR
         sock_pasivo = socket(PF_INET, SOCK_STREAM, 0);
+
+        if(sock_pasivo < 0){
+            fprintf(stderr, "Error al hacer el socket pasivo TDP\n");
+            exit(1);
+        }
     }
     else // Preparar socket UDP
     {
         // A RELLENAR
         sock_pasivo = socket(PF_INET, SOCK_DGRAM, 0);
+
+        if(sock_pasivo < 0){
+            fprintf(stderr, "Error al hacer el socket pasivo UDP\n");
+            exit(1);
+        }
     }
 
     // Asignamos el puerto al socket
     // A RELLENAR
-    bind(sock_pasivo, (struct sockaddr *)&d_local, sizeof(d_local));
+    if(bind(sock_pasivo, (struct sockaddr *)&d_local, sizeof(d_local)) != 0){
+        fprintf(stderr, "Error al bindear\n");
+        exit(1);
 
+    }
+    
+    if(es_stream)
+        listen(sock_pasivo, SOMAXCONN);
+
+    printf("Me cago en tu puta madre 1 \n");
     // creamos el espacio para los objetos de datos de hilo
     hilos_aten = (pthread_t *)malloc(num_hilos_aten * sizeof(pthread_t));
-
+     printf("Me cago en tu puta madre 2 \n");
     // Inicializamos los mutex de exclusión a los ficheros de log
     // en que escribirán los workers
     // A RELLENAR
@@ -386,40 +447,57 @@ int main(int argc, char *argv[])
             exit(1);
         }
     }
-
     // Reservamos espacio para los objetos de datos de hilo de los hilos trabajadores
     hilos_work = (pthread_t *)malloc(num_hilos_work * sizeof(pthread_t));
-
     // Inicializamos la cola
     // A RELLENAR
+   
     inicializar_cola(&cola_eventos,tam_cola);
-
+   
     // Creamos cada uno de los hilos de atención de peticiones
     for (i = 0; i < num_hilos_aten; i++)
     {
         // A RELLENAR
+
+        printf("I peticiones= %d\n", i);
+        q = malloc(sizeof(param_hilo_aten));
+        
+
+        printf("Me cago en tu puta madre 5.0.1 \n");
         q->num_hilo = i;
+        printf("Me cago en tu puta madre 5.1 \n");
         q->s = sock_pasivo;
-        pthread_create(*(hilos_aten+i), NULL, (void *)AtencionPeticiones, &q);
+        printf("Me cago en tu puta madre 5.2 \n");
+        pthread_create(&hilos_aten[i], NULL, (void *)AtencionPeticiones, q);
+        printf("Me cago en tu puta madre 5.3 \n");
+
+        
+        //*(hilos_aten+i)
         //hilos_aten[i]
     }
+    printf("Me cago en tu puta madre 6 \n");
     // Y creamos cada uno de los hilos trabajadores
     for (i = 0; i < num_hilos_work; i++)
     {
         // A RELLENAR (?)
+        printf("I work = %d\n", i);
         id = malloc(sizeof(int));
         *id = i;
 
         // Crear el hilo pthread_create
-        pthread_create(*(hilos_work+i), NULL, (void *)Worker, &id);
+        pthread_create(&hilos_work[i], NULL, (void *)Worker, id);
 
     }
+
+    printf("Me cago en tu puta madre 7 \n");
 
     // Esperamos a que terminen todos los hilos
     for (i = 0; i < num_hilos_aten; i++)
     {
         pthread_join(hilos_aten[i], NULL);
     }
+
+    printf("Me cago en tu puta madre 8 \n");
     for (i = 0; i < num_hilos_work; i++)
     {
         pthread_join(hilos_work[i], NULL);
