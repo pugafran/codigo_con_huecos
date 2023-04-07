@@ -10,7 +10,7 @@ Cliente de RPC que inicializa el servidor de sislog
 #include "util.h"
 
 
-int  main(int argc,char *argv[])
+int main(int argc,char *argv[])
 {
    CLIENT *cl;
    faclevel params;
@@ -42,11 +42,13 @@ int  main(int argc,char *argv[])
    // Conectamos con el servidor RPC pasándole los parámetros apropiados
    // para que inicialice sus estructuras de datos con el tamaño requerido
    // RELLENA ESTE HUECO
-   |
-   |
-   |
-   |
-
+   printf("\nP1\n");
+   params.facilidad = atoi((char *) argv[1]);
+   params.nivel = atoi((char *) argv[2]);
+   printf("\nP2\n");
+   inicializar_sislog_1(&params, cl);
+   printf("\nP3\n");
    printf("Sislog inicializado\n");
    return 0;
+
 }

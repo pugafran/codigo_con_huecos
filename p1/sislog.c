@@ -127,7 +127,7 @@ static void handler(int signum)
         destruir_cola(&cola_eventos);
         free(hilos_aten);
         free(hilos_work);
-                printf("\nCola e hilos eliminados\n");
+        printf("\nCola e hilos eliminados\n");
         for (i = 0; i < NUMFACILITIES; i++)
         {
             if (pthread_mutex_destroy(&(mfp[i])) != 0)
@@ -137,6 +137,7 @@ static void handler(int signum)
             }
         }
 
+        
         exit(0);
 
     default:
@@ -155,7 +156,7 @@ void procesa_argumentos(int argc, char *argv[])
 
     // Extraer los argumentos y validar sus valores
     
-    if(valida_numero(argv[1])){
+    if(valida_numero(argv[1]) != 0){
         puerto = atoi(argv[1]);
     }
 
@@ -259,10 +260,21 @@ void *Worker(int *id)
         // A RELLENAR
         printf("\nWORKER 1\n");
         evt = (dato_cola *) obtener_dato_cola(&cola_eventos);
-        printf("\nWORKER 2\n");
-        printf("La fcking facilidad: %d\n",evt->facilidad);
-        printf("El fcking nivel %d:\n",evt->nivel);
-        printf("El fcking mensaje %s:\n",evt->msg);
+
+        if (valida_numero(evt->facilidad) && evt->facilidad < 0 || valida_numero(evt->facilidad) && evt->facilidad > 7){
+            fprintf(stderr, "Número de facilidad no admisible\n");
+            exit(1);
+
+
+        }
+
+        if (valida_numero(evt->nivel) && evt->nivel < 0 || valida_numero(evt->nivel) && evt->nivel > 7){
+            fprintf(stderr, "Número de nivel no admisible\n");
+            exit(1);
+
+
+        }
+
         timeraw = time(NULL);
         fechahora = ctime(&timeraw);
 
@@ -276,8 +288,14 @@ void *Worker(int *id)
         }
 
         printf("\nWORKER 4\n");
-        fprintf(fp,"%s:%s:%s:%s\n", facilities_names[evt->facilidad], level_names[evt->nivel], fechahora, evt->msg);
+        fprintf(fp,"%s:%s:%s:%s", facilities_names[evt->facilidad], level_names[evt->nivel], fechahora, evt->msg);
         printf("\nWORKER 5\n");
+        
+        if(fclose(fp) != 0){
+            fprintf(stderr, "Error al cerrar el archivo %s\n", facilities_file_names[evt->facilidad]);
+            exit(1);
+        }
+
     }
 }
 
@@ -335,29 +353,34 @@ void *AtencionPeticiones(param_hilo_aten *q)
             len = sizeof(d_cliente);
 
             printf("Me cago en tu puta madre UDP 1\n");
-            if (recibidos = recvfrom(sock_dat, buffer, TAMMSG, 0, (struct sockaddr *) &d_cliente, &len) == -1){
+            if (recibidos = recvfrom(s, buffer, TAMMSG, 0, (struct sockaddr *) &d_cliente, &len) == -1){
                 fprintf(stderr, "Error al recibir vía UDP\n");
                 exit(1);
             }
-            buffer[recibidos] = 0;
+            
+            //buffer[recibidos] = 0;
             printf("Me cago en tu puta madre UDP 2\n");
-            close(sock_dat);
+           
         }
         // Una vez recibido el mensaje, es necesario separar sus partes,
         // guardarlos en la estructura adecuada, y poner esa estructura en la cola
         // de sincronización.
         // A RELLENAR
         // Las siguientes líneas de código deben estar dentro del bucle while, ya que se requiere una nueva estructura para cada mensaje recibido
-        printf("Hola");
-
+        
+        printf("\nPrintf informativo - 1\n");
         p = (dato_cola *)malloc(sizeof(dato_cola));
+        printf("\nPrintf informativo - 2\n");
         //p->facilidad = malloc(sizeof(dato_cola));
     
         
-
+        printf("\nPrintf informativo - 3\n");
         token = strtok_r(buffer, ":", &loc);
+        printf("\nPrintf informativo - 4\n");
         printf("%s",token);
-        p->facilidad = atoi(token); // Se debe convertir a entero
+        printf("\nPrintf informativo - 5\n");
+        p->facilidad = atoi(token); // Se debe convertir a entero  (token-48?)
+        printf("\nPrintf informativo - 6\n");
 
         token = strtok_r(NULL, ":", &loc);
         printf("%s",token);
@@ -428,6 +451,21 @@ int main(int argc, char *argv[])
 
     }
     
+    int optval;
+
+    //Otra opción &(int) {1} en vez de &optval
+    optval = 1;
+
+    if(setsockopt(sock_pasivo, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) != 0){
+        fprintf(stderr, "Error al cambiar el tiempo de reasignación del socket pasivo\n");
+        exit(1);
+    }
+    
+    if(setsockopt(sock_pasivo, SOL_SOCKET, SO_REUSEPORT, &optval, sizeof(optval)) != 0){
+        fprintf(stderr, "Error al cambiar el tiempo de reasignación del socket pasivo\n");
+        exit(1);
+    }
+
     if(es_stream)
         listen(sock_pasivo, SOMAXCONN);
 

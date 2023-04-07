@@ -14,7 +14,6 @@ int valida_numero(char *str) {
     for (int i = 0; str[i] != '\0'; i++) {
         // Si el carácter no es un dígito numérico, devuelve 0
         if (!isdigit(str[i])) {
-            log_debug(printf("%s del valor %s no es un número.\n", str[i], str));
             return 0;
         }
     }

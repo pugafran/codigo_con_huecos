@@ -20,6 +20,8 @@ char *ip_sislog;
 // numero de clientes
 int num_clientes;
 
+//Mutex para controlar el archivo
+pthread_mutex_t mutex;
 
 // tipo de datos que recibiran los hilos cliente
 struct datos_hilo{
@@ -65,9 +67,9 @@ void *Cliente(datos_hilo *p)
         // leemos mediante exclusión la siguiente línea del fichero cuyo *FILE
         // recibimos en uno de los campos de de la estructura datos_hilo
         // RELLENA ESTE HUECO
-        |
-        |
-        |
+        pthread_mutex_lock(&mutex);
+        s = fgets(buffer, TAMLINEA, fp);
+        pthread_mutex_unlock(&mutex);
 
         // si la cadena leida del fichero no es nula, tokenizamos de manera
         // reentrante la línea para extraer sus tokens e ir componiendo
@@ -76,12 +78,27 @@ void *Cliente(datos_hilo *p)
         {
             // Tokenizar cadena y rellenado de la estructura de datos
             // RELLENA ESTE HUECO
-            |
-            |
-            |
-            |
-            |
-            |
+            p = (datos_hilo *)malloc(sizeof(datos_hilo));
+        printf("\nPrintf informativo - 2\n");
+        //p->facilidad = malloc(sizeof(dato_cola));
+    
+        
+        
+        token = strtok_r(buffer, ":", &loc);
+
+        printf("%s",token);
+
+        evt.facilidad = atoi(token); // Se debe convertir a entero  (token-48?)
+
+
+        token = strtok_r(NULL, ":", &loc);
+        printf("%s",token);
+        evt.nivel = atoi(token); // Se debe convertir a entero
+
+        token = strtok_r(NULL, ":", &loc);
+        strcpy(evt.msg, token);
+
+
 
             // Mensaje de depuración
             sprintf(msg, "Cliente %d envia evento. Facilidad: %d, Nivel: %d, Texto: %s\n",id_cliente, evt.facilidad, evt.nivel, evt.msg);
@@ -90,13 +107,7 @@ void *Cliente(datos_hilo *p)
             // Enviar evento por RPC e imprimir el velor retornado
             // y liberar seguidamente las estructuras de datos utilizadas
             // RELLENA ESTE HUECO
-            |
-            |
-            |
-            |
-            |
-            |
-            |
+            registrar_evento_1(&evt,cl);
 
         }
         clnt_destroy(cl);
@@ -154,10 +165,11 @@ int  main(int argc,char *argv[])
     for (i=0;i<num_clientes;i++)
     {
         // RELLENA ESTE HUECO
-        |
-        |
-        |
-        |
+
+        q = malloc(sizeof(datos_hilo));
+        
+
+        pthread_create(&th[i], NULL, (void *)Cliente, q);
 
     }
 

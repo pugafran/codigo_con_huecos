@@ -70,12 +70,19 @@ void init() {
     // la matriz de eventos y se llama a la función anterior para incializarla
     // con ceros
     // RELLENA ESTE HUECO
-    |
-    |
-    |
-    |
-    |
-    |
+    if (contabilidad_eventos == NULL){
+        
+        **contabilidad_eventos = (int **) malloc(numfacilities * sizeof(int *));
+        
+        for (int i = 0; i < numfacilities; i++) {
+            contabilidad_eventos[i] = (int *) malloc(numlevels * sizeof(int));
+        }
+    }
+
+    inicializar_matriz_eventos(contabilidad_eventos,numfacilities,numlevels);
+
+    //Error al inicializar sislog?
+
 }
 
 Resultado * inicializar_sislog_1_svc(faclevel *q, struct svc_req *pet)
@@ -86,17 +93,20 @@ Resultado * inicializar_sislog_1_svc(faclevel *q, struct svc_req *pet)
     // y si no lo está se devuelve un mensaje de error.
     // En caso de estar dentro de los limites, llama a la función anterior para incializar
     // la matriz de recuento de eventos y se devuelve un resultado de exito
-    if (q->facilidad<=0)
+    if ((valida_numero(q->facilidad) && q->facilidad < 0 || valida_numero(q->facilidad) && q->facilidad > 7))
     {
         r.caso=1;
-        r.Resultado_u.msg="ERROR: Al inicializar sislog. El numero maximo de facilidades no puede ser <=0";
+        r.Resultado_u.msg="ERROR: Al inicializar sislog, número de facilidad no admisible.";
     }
     // Continúa tú...
     // RELLENA ESTE HUECO
-    |
-    |
-    |
-    |
+    if ((valida_numero(q->nivel) && q->nivel < 0 || valida_numero(q->nivel) && q->nivel > 7))
+    {
+        r.caso=1;
+        r.Resultado_u.msg="ERROR: Al inicializar sislog, número de nivel no admisible.";
+    }
+
+    init();
 
     // Antes de retornar, para depuración, mostramos por pantalla la matriz de
     // contadores llamando a la función mostrar_recuento_eventos (util.c)
@@ -111,7 +121,7 @@ Resultado * registrar_evento_1_svc(eventsislog *evt, struct svc_req * peticion)
   FILE *fp;
   char *fechahora;
   time_t timeraw;
-
+  
     // comprueba si el evento que se desea registrar tiene un numero de facilidad
     // y nivel dentro de los admisibles (retorna un mensaje de error si no)
     // Si todo es correcto debe crear la línea de registro en el fichero correspondiente
@@ -121,10 +131,41 @@ Resultado * registrar_evento_1_svc(eventsislog *evt, struct svc_req * peticion)
     // un resultado de exito
 
     // RELLENA ESTE HUECO
-    |
-    |
-    |
-    |    
+        if (valida_numero(evt->facilidad) && evt->facilidad < 0 || valida_numero(evt->facilidad) && evt->facilidad > 7){
+            res.caso = 1;
+            res.Resultado_u.msg = "ERROR: Número de facilidad no admisible";
+
+
+        }
+
+        if (valida_numero(evt->nivel) && evt->nivel < 0 || valida_numero(evt->nivel) && evt->nivel > 7){
+            res.caso = 1;
+            res.Resultado_u.msg = "ERROR: Número de nivel no admisible";
+
+
+        }
+
+        fp = fopen(facilities_file_names[evt->facilidad],"a");
+
+        if (fp == NULL) {
+            res.caso = 1;
+            res.Resultado_u.msg = "ERROR: Al abrir el archivo";
+            exit(1);
+        }
+
+        if (fprintf(fp,"%s:%s:%s:%s", facilities_names[evt->facilidad], level_names[evt->nivel], fechahora, evt->msg) < 0){
+            res.caso = 1;
+            res.Resultado_u.msg = "ERROR: Al escribir en el archivo";
+            exit(1);
+        }
+    
+        contabilidad_eventos[evt->facilidad][evt->nivel] += 1; 
+
+        if(fclose(fp) != 0){
+            res.caso = 1;
+            res.Resultado_u.msg = "ERROR: Al cerrar el archivo";
+            exit(1);
+        }
 
     return(&res);
 }
@@ -148,10 +189,12 @@ Resultado * obtener_total_facilidad_1_svc(int * fac, struct svc_req * peticion)
         res.Resultado_u.valor=0;
         // Computar la suma de los contadores para la facilidad dada
         // RELLENA ESTE HUECO
-        |
-        |
-        |
-        |
+        for(i = 0; i < numlevels;i++){
+            if (contabilidad_eventos[*fac][i] != 0)
+                res.Resultado_u.valor++;
+        }
+
+
     }	  
     return(&res);
 }
@@ -174,10 +217,14 @@ Resultado * obtener_total_nivel_1_svc(int * level, struct svc_req * peticion)
     {  
         // Computar la suma de los contadores para la facilidad dada
         // RELLENA ESTE HUECO
-        |
-        |
-        |
-        |
+
+        res.caso = 0;
+        res.Resultado_u.valor=0;
+
+        for(i = 0; i < numfacilities;i++){
+            if (contabilidad_eventos[i][*level] != 0)
+                res.Resultado_u.valor++;
+        }
 
     }	  
     return(&res);
@@ -205,8 +252,11 @@ Resultado * obtener_total_facilidadnivel_1_svc(faclevel * q, struct svc_req * pe
     {  
         // Obtener el contador solicitado
         // RELLENA ESTE HUECO
-        |
-        |
+
+        res.caso = 0;
+        res.Resultado_u.valor = contabilidad_eventos[q->facilidad][q->nivel];
+
+        
 
     }	  
     return(&res);

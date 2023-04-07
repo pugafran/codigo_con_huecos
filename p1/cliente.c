@@ -194,7 +194,7 @@ void *hilo_lector(datos_hilo *p)
             ((struct sockaddr_in*) &p->dserv)->sin_addr.s_addr = inet_addr(ip_syslog);
             ((struct sockaddr_in*) &p->dserv)->sin_port = htons(puerto_syslog);
 
-            int bytes_enviados = sendto(sock_dat, buffer, TAMLINEA, 0, &p->dserv, sizeof(p->dserv));
+            int bytes_enviados = sendto(sock_dat, buffer, TAMLINEA, 0, &p->dserv, sizeof(*(p->dserv)));
 
             if (bytes_enviados == -1){
                 fprintf(stderr, "Error al enviar los datos\n");

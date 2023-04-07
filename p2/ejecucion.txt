@@ -1,0 +1,5 @@
+Cliente:
+gcc cliente.c util.c sislog_clnt.c sislog_xdr.c -o cliente -lpthread
+
+Inicializador_sislog:
+gcc inicializador_sislog.c sislog_xdr.c sislog_clnt.c util.c -o inicializador_sislog
