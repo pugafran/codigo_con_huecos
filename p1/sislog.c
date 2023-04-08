@@ -134,7 +134,7 @@ static void handler(int signum)
                 exit(1);
             }
         }
-        
+
         exit(0);
 
     default:
@@ -145,79 +145,91 @@ static void handler(int signum)
 void procesa_argumentos(int argc, char *argv[])
 {
 
-    if (argc != 6) {
+    if (argc != 6)
+    {
         fprintf(stderr, "El número de argumentos es incorrecto.\n");
         fprintf(stderr, "Uso: %s <num_puerto> <t|u> <tam_cola> <num_hilos_aten> <num_hilos_work>\n", argv[0]);
         exit(1);
     }
 
     // Extraer los argumentos y validar sus valores
-    
-    if(valida_numero(argv[1]) != 0){
+
+    if (valida_numero(argv[1]) != 0)
+    {
         puerto = atoi(argv[1]);
     }
 
-    else{
+    else
+    {
         fprintf(stderr, "El número de puerto debe ser un número.\n");
         exit(1);
     }
 
-
-    if (puerto < 1024 || puerto > 65535) {
+    if (puerto < 1024 || puerto > 65535)
+    {
         fprintf(stderr, "El número de puerto debe estar entre 1024 y 65535.\n");
         exit(1);
     }
 
-    char tipo_socket = * argv[2];
-    if (tipo_socket != 't' && tipo_socket != 'u') {
+    char tipo_socket = *argv[2];
+    if (tipo_socket != 't' && tipo_socket != 'u')
+    {
         fprintf(stderr, "El tipo de socket debe ser 't' o 'u'.\n");
         exit(1);
     }
 
-    else if(tipo_socket == 't')
+    else if (tipo_socket == 't')
         es_stream = CIERTO;
-    
-    else if (tipo_socket == 'u')
-        es_stream = FALSO;  
 
-    if(valida_numero(argv[3])){
+    else if (tipo_socket == 'u')
+        es_stream = FALSO;
+
+    if (valida_numero(argv[3]))
+    {
         tam_cola = atoi(argv[3]);
     }
 
-    else{
+    else
+    {
         fprintf(stderr, "El tamaño de la cola debe ser un número.\n");
         exit(1);
     }
 
-    if (tam_cola <= 0) {
+    if (tam_cola <= 0)
+    {
         fprintf(stderr, "El tamaño de la cola debe ser un número positivo.\n");
         exit(1);
     }
 
-    if(valida_numero(argv[4])){
+    if (valida_numero(argv[4]))
+    {
         num_hilos_aten = atoi(argv[4]);
-       
     }
 
-    else{
+    else
+    {
         fprintf(stderr, "El número de hilos de atención debe ser un número.\n");
         exit(1);
     }
 
-    if (num_hilos_aten <= 0) {
+    if (num_hilos_aten <= 0)
+    {
         fprintf(stderr, "El número de hilos de atención debe ser un número positivo.\n");
         exit(1);
     }
-    if(valida_numero(argv[5])){
+    if (valida_numero(argv[5]))
+    {
         num_hilos_work = atoi(argv[5]);
     }
 
-    else{
+    else
+    {
         fprintf(stderr, "El número de hilos de atención debe ser un número.\n");
         exit(1);
     }
-    
-    if (num_hilos_work <= 0) {
+
+    if (num_hilos_work <= 0)
+    {
         fprintf(stderr, "El número de hilos trabajadores debe ser un número positivo.\n");
         exit(1);
     }
@@ -239,7 +251,6 @@ void *Worker(int *id)
     // Hacemos copia del parámetro recibido
     id_worker = *id;
 
-    
     // y liberamos la memoria reservada para él
     free(id);
 
@@ -251,46 +262,43 @@ void *Worker(int *id)
     // genera en base a ellos la línea a escribir, y la escribe
     // en el fichero que corresponda. Mira "cola.h"
     // para recordar la estructura dato_cola que recibe de la cola
-   
+
     while (1)
     {
         // A RELLENAR
-        evt = (dato_cola *) obtener_dato_cola(&cola_eventos);
+        evt = (dato_cola *)obtener_dato_cola(&cola_eventos);
 
-        if (valida_numero(&evt->facilidad) && evt->facilidad < 0 || valida_numero(&evt->facilidad) && evt->facilidad > 7){
+        if (valida_numero(&evt->facilidad) && evt->facilidad < 0 || valida_numero(&evt->facilidad) && evt->facilidad > 7)
+        {
             fprintf(stderr, "Número de facilidad no admisible\n");
             exit(1);
-
-
         }
 
-        if (valida_numero(&evt->nivel) && evt->nivel < 0 || valida_numero(&evt->nivel) && evt->nivel > 7){
+        if (valida_numero(&evt->nivel) && evt->nivel < 0 || valida_numero(&evt->nivel) && evt->nivel > 7)
+        {
             fprintf(stderr, "Número de nivel no admisible\n");
             exit(1);
-
-
         }
 
         timeraw = time(NULL);
         fechahora = ctime(&timeraw);
         fechahora[strlen(fechahora) - 1] = '\0';
 
-        fp = fopen(facilities_file_names[evt->facilidad],"a");
+        fp = fopen(facilities_file_names[evt->facilidad], "a");
 
-        if (fp == NULL) {
+        if (fp == NULL)
+        {
             fprintf(stderr, "Error al abrir el archivo %s\n", facilities_file_names[evt->facilidad]);
             exit(1);
         }
 
-    
-        fprintf(fp,"%s:%s:%s:%s", facilities_names[evt->facilidad], level_names[evt->nivel], fechahora, evt->msg);
-        
-        
-        if(fclose(fp) != 0){
+        fprintf(fp, "%s:%s:%s:%s", facilities_names[evt->facilidad], level_names[evt->nivel], fechahora, evt->msg);
+
+        if (fclose(fp) != 0)
+        {
             fprintf(stderr, "Error al cerrar el archivo %s\n", facilities_file_names[evt->facilidad]);
             exit(1);
         }
-
     }
 }
 
@@ -298,7 +306,7 @@ void *AtencionPeticiones(param_hilo_aten *q)
 {
     int sock_dat, recibidos;
     struct sockaddr_in d_cliente;
-    
+
     char msg[100];
     char buffer[TAMMSG];
     char *token;
@@ -311,11 +319,11 @@ void *AtencionPeticiones(param_hilo_aten *q)
     // Información de depuración
     sprintf(msg, "Comienza el Hilo de Atencion de Peticiones %d\n", q->num_hilo);
     log_debug(msg);
-  
+
     // Hacemos copia de los parámetros recibidos
     s = q->s;
     num_hilo = q->num_hilo;
-    
+
     // y liberamos la memoria reservada para el parámetro
     free(q);
 
@@ -342,26 +350,23 @@ void *AtencionPeticiones(param_hilo_aten *q)
             int len;
             len = sizeof(d_cliente);
 
-            if (recibidos = recvfrom(s, buffer, TAMMSG, 0, (struct sockaddr *) &d_cliente, &len) == -1){
+            if (recibidos = recvfrom(s, buffer, TAMMSG, 0, (struct sockaddr *)&d_cliente, &len) == -1)
+            {
                 fprintf(stderr, "Error al recibir vía UDP\n");
                 exit(1);
             }
-            
-            //buffer[recibidos] = 0;
 
-           
+            // buffer[recibidos] = 0;
         }
         // Una vez recibido el mensaje, es necesario separar sus partes,
         // guardarlos en la estructura adecuada, y poner esa estructura en la cola
         // de sincronización.
         // A RELLENAR
         // Las siguientes líneas de código deben estar dentro del bucle while, ya que se requiere una nueva estructura para cada mensaje recibido
-        
 
         p = (dato_cola *)malloc(sizeof(dato_cola));
-        //p->facilidad = malloc(sizeof(dato_cola));
-    
-        
+        // p->facilidad = malloc(sizeof(dato_cola));
+
         token = strtok_r(buffer, ":", &loc);
         p->facilidad = atoi(token); // Se debe convertir a entero  (token-48?)
 
@@ -371,9 +376,7 @@ void *AtencionPeticiones(param_hilo_aten *q)
         token = strtok_r(NULL, ":", &loc);
         strcpy(p->msg, token);
 
-
-        insertar_dato_cola(&cola_eventos,p);
-
+        insertar_dato_cola(&cola_eventos, p);
     }
 }
 
@@ -387,7 +390,7 @@ void *AtencionPeticiones(param_hilo_aten *q)
 int main(int argc, char *argv[])
 {
     register int i; // Indice para bucles
-    int *id=NULL;        // Para pasar el identificador a cada hilo trabajador
+    int *id = NULL; // Para pasar el identificador a cada hilo trabajador
     int sock_pasivo;
     struct sockaddr_in d_local;
     param_hilo_aten *q = NULL;
@@ -407,7 +410,8 @@ int main(int argc, char *argv[])
         // A RELLENAR
         sock_pasivo = socket(PF_INET, SOCK_STREAM, 0);
 
-        if(sock_pasivo < 0){
+        if (sock_pasivo < 0)
+        {
             fprintf(stderr, "Error al hacer el socket pasivo TDP\n");
             exit(1);
         }
@@ -417,7 +421,8 @@ int main(int argc, char *argv[])
         // A RELLENAR
         sock_pasivo = socket(PF_INET, SOCK_DGRAM, 0);
 
-        if(sock_pasivo < 0){
+        if (sock_pasivo < 0)
+        {
             fprintf(stderr, "Error al hacer el socket pasivo UDP\n");
             exit(1);
         }
@@ -425,28 +430,30 @@ int main(int argc, char *argv[])
 
     // Asignamos el puerto al socket
     // A RELLENAR
-    if(bind(sock_pasivo, (struct sockaddr *)&d_local, sizeof(d_local)) != 0){
+    if (bind(sock_pasivo, (struct sockaddr *)&d_local, sizeof(d_local)) != 0)
+    {
         fprintf(stderr, "Error al bindear\n");
         exit(1);
-
     }
-    
+
     int optval;
 
-    //Otra opción &(int) {1} en vez de &optval
+    // Otra opción &(int) {1} en vez de &optval
     optval = 1;
 
-    if(setsockopt(sock_pasivo, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) != 0){
-        fprintf(stderr, "Error al cambiar el tiempo de reasignación del socket pasivo\n");
-        exit(1);
-    }
-    
-    if(setsockopt(sock_pasivo, SOL_SOCKET, SO_REUSEPORT, &optval, sizeof(optval)) != 0){
+    if (setsockopt(sock_pasivo, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) != 0)
+    {
         fprintf(stderr, "Error al cambiar el tiempo de reasignación del socket pasivo\n");
         exit(1);
     }
 
-    if(es_stream)
+    if (setsockopt(sock_pasivo, SOL_SOCKET, SO_REUSEPORT, &optval, sizeof(optval)) != 0)
+    {
+        fprintf(stderr, "Error al cambiar el tiempo de reasignación del socket pasivo\n");
+        exit(1);
+    }
+
+    if (es_stream)
         listen(sock_pasivo, SOMAXCONN);
 
     // creamos el espacio para los objetos de datos de hilo
@@ -467,24 +474,22 @@ int main(int argc, char *argv[])
     hilos_work = (pthread_t *)malloc(num_hilos_work * sizeof(pthread_t));
     // Inicializamos la cola
     // A RELLENAR
-   
-    inicializar_cola(&cola_eventos,tam_cola);
-   
+
+    inicializar_cola(&cola_eventos, tam_cola);
+
     // Creamos cada uno de los hilos de atención de peticiones
     for (i = 0; i < num_hilos_aten; i++)
     {
         // A RELLENAR
 
         q = malloc(sizeof(param_hilo_aten));
-        
 
         q->num_hilo = i;
         q->s = sock_pasivo;
         pthread_create(&hilos_aten[i], NULL, (void *)AtencionPeticiones, q);
 
-        
         //*(hilos_aten+i)
-        //hilos_aten[i]
+        // hilos_aten[i]
     }
     // Y creamos cada uno de los hilos trabajadores
     for (i = 0; i < num_hilos_work; i++)
@@ -495,9 +500,7 @@ int main(int argc, char *argv[])
 
         // Crear el hilo pthread_create
         pthread_create(&hilos_work[i], NULL, (void *)Worker, id);
-
     }
-
 
     // Esperamos a que terminen todos los hilos
     for (i = 0; i < num_hilos_aten; i++)

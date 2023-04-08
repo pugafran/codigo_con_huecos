@@ -17,14 +17,14 @@ todo : $(CLIENTE) $(SERVIDOR) $(INICIALIZADOR)
 # Generacion del cliente y del servidor
 #**************************************************
 
-$(CLIENTE) : cliente.c
-	$(CC) cliente.c util.c sislog_clnt.c sislog_xdr.c -o cliente $(LDFLAGS)
+$(CLIENTE) : cliente.c sislog_clnt.o sislog_xdr.o util.o
+	$(CC) $(CFLAGS) cliente.c util.c sislog_clnt.c sislog_xdr.c -o cliente $(LDFLAGS)
 
-$(INICIALIZADOR) : inicializador_sislog.c
-	$(CC) inicializador_sislog.c sislog_xdr.c sislog_clnt.c util.c -o inicializador_sislog 
+$(INICIALIZADOR) : inicializador_sislog.c sislog_clnt.o sislog_xdr.o util.o
+	$(CC) $(CFLAGS) inicializador_sislog.c sislog_xdr.c sislog_clnt.c util.c -o inicializador_sislog 
 
-$(SERVIDOR) : servicios.c
-	$(CC) -o servidor servicios.c sislog_svc.c util.c sislog_xdr.c
+$(SERVIDOR) : servicios.c sislog_svc.o sislog_xdr.o util.o
+	$(CC) $(CFLAGS) -o servidor servicios.c sislog_svc.c util.c sislog_xdr.c
 
 sislog_svc.o : sislog.h sislog_svc.c 
 	$(CC) $(CFLAGS) -c sislog_svc.c 
