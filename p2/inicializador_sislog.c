@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
       exit(3);
    }
    ip_sislog = strdup(argv[3]);
-   if (!valida_ip(argv[3]))
+   if (!valida_ip(ip_sislog))
    {
       fprintf(stderr, "Error: El parámetro IP no es valido\n");
       exit(4);
@@ -42,6 +42,7 @@ int main(int argc, char *argv[])
    // para que inicialice sus estructuras de datos con el tamaño requerido
    // RELLENA ESTE HUECO
    cl = clnt_create(ip_sislog, SISLOG, PRIMERA, "tcp");
+   free(ip_sislog);
    if (cl == NULL)
    {
       clnt_pcreateerror("No puedo inicializar cliente");
@@ -53,6 +54,7 @@ int main(int argc, char *argv[])
    params.nivel = atoi((char *)argv[2]);
    printf("\nP2\n");
    inicializar_sislog_1(&params, cl);
+   clnt_destroy(cl);
    printf("\nP3\n");
    printf("Sislog inicializado\n");
    return 0;
