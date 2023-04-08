@@ -123,11 +123,9 @@ static void handler(int signum)
         // Si se recibe esta señal, hay que terminar "bien"
         // liberando todos los recursos en uso antes de finalizar
         // A RELLENAR
-        printf("\nHANDLER ACTIVADO\n");
         destruir_cola(&cola_eventos);
         free(hilos_aten);
         free(hilos_work);
-        printf("\nCola e hilos eliminados\n");
         for (i = 0; i < NUMFACILITIES; i++)
         {
             if (pthread_mutex_destroy(&(mfp[i])) != 0)
@@ -136,7 +134,6 @@ static void handler(int signum)
                 exit(1);
             }
         }
-
         
         exit(0);
 
@@ -258,17 +255,16 @@ void *Worker(int *id)
     while (1)
     {
         // A RELLENAR
-        printf("\nWORKER 1\n");
         evt = (dato_cola *) obtener_dato_cola(&cola_eventos);
 
-        if (valida_numero(evt->facilidad) && evt->facilidad < 0 || valida_numero(evt->facilidad) && evt->facilidad > 7){
+        if (valida_numero(&evt->facilidad) && evt->facilidad < 0 || valida_numero(&evt->facilidad) && evt->facilidad > 7){
             fprintf(stderr, "Número de facilidad no admisible\n");
             exit(1);
 
 
         }
 
-        if (valida_numero(evt->nivel) && evt->nivel < 0 || valida_numero(evt->nivel) && evt->nivel > 7){
+        if (valida_numero(&evt->nivel) && evt->nivel < 0 || valida_numero(&evt->nivel) && evt->nivel > 7){
             fprintf(stderr, "Número de nivel no admisible\n");
             exit(1);
 
@@ -277,9 +273,8 @@ void *Worker(int *id)
 
         timeraw = time(NULL);
         fechahora = ctime(&timeraw);
-
         fechahora[strlen(fechahora) - 1] = '\0';
-        printf("\nWORKER 3\n");
+
         fp = fopen(facilities_file_names[evt->facilidad],"a");
 
         if (fp == NULL) {
@@ -287,9 +282,9 @@ void *Worker(int *id)
             exit(1);
         }
 
-        printf("\nWORKER 4\n");
+    
         fprintf(fp,"%s:%s:%s:%s", facilities_names[evt->facilidad], level_names[evt->nivel], fechahora, evt->msg);
-        printf("\nWORKER 5\n");
+        
         
         if(fclose(fp) != 0){
             fprintf(stderr, "Error al cerrar el archivo %s\n", facilities_file_names[evt->facilidad]);
@@ -332,15 +327,10 @@ void *AtencionPeticiones(param_hilo_aten *q)
         {
             // Aceptar el cliente, leer su mensaje hasta recibirlo entero, y cerrar la conexión
             // A RELLENAR
-            printf("Me cago en tu puta madre TCP 1\n");
-            printf("\n\nSocket datos: %d\n\n",s);
             sock_dat = accept(s, 0, 0);
             recibidos = read(sock_dat, buffer, TAMMSG);
-            printf("Me llegó algo 2\n");
-            printf("%s", buffer);
             buffer[recibidos] = 0;
             close(sock_dat);
-            printf("Me cago en tu puta madre TCP 2\n");
         }
 
         else // UDP
@@ -352,14 +342,13 @@ void *AtencionPeticiones(param_hilo_aten *q)
             int len;
             len = sizeof(d_cliente);
 
-            printf("Me cago en tu puta madre UDP 1\n");
             if (recibidos = recvfrom(s, buffer, TAMMSG, 0, (struct sockaddr *) &d_cliente, &len) == -1){
                 fprintf(stderr, "Error al recibir vía UDP\n");
                 exit(1);
             }
             
             //buffer[recibidos] = 0;
-            printf("Me cago en tu puta madre UDP 2\n");
+
            
         }
         // Una vez recibido el mensaje, es necesario separar sus partes,
@@ -368,32 +357,23 @@ void *AtencionPeticiones(param_hilo_aten *q)
         // A RELLENAR
         // Las siguientes líneas de código deben estar dentro del bucle while, ya que se requiere una nueva estructura para cada mensaje recibido
         
-        printf("\nPrintf informativo - 1\n");
+
         p = (dato_cola *)malloc(sizeof(dato_cola));
-        printf("\nPrintf informativo - 2\n");
         //p->facilidad = malloc(sizeof(dato_cola));
     
         
-        printf("\nPrintf informativo - 3\n");
         token = strtok_r(buffer, ":", &loc);
-        printf("\nPrintf informativo - 4\n");
-        printf("%s",token);
-        printf("\nPrintf informativo - 5\n");
         p->facilidad = atoi(token); // Se debe convertir a entero  (token-48?)
-        printf("\nPrintf informativo - 6\n");
 
         token = strtok_r(NULL, ":", &loc);
-        printf("%s",token);
         p->nivel = atoi(token); // Se debe convertir a entero
 
         token = strtok_r(NULL, ":", &loc);
         strcpy(p->msg, token);
 
-            printf("\nSALÍ\n");
 
         insertar_dato_cola(&cola_eventos,p);
 
-        printf("\nDato insertado\n");
     }
 }
 
@@ -469,10 +449,8 @@ int main(int argc, char *argv[])
     if(es_stream)
         listen(sock_pasivo, SOMAXCONN);
 
-    printf("Me cago en tu puta madre 1 \n");
     // creamos el espacio para los objetos de datos de hilo
     hilos_aten = (pthread_t *)malloc(num_hilos_aten * sizeof(pthread_t));
-     printf("Me cago en tu puta madre 2 \n");
     // Inicializamos los mutex de exclusión a los ficheros de log
     // en que escribirán los workers
     // A RELLENAR
@@ -497,28 +475,21 @@ int main(int argc, char *argv[])
     {
         // A RELLENAR
 
-        printf("I peticiones= %d\n", i);
         q = malloc(sizeof(param_hilo_aten));
         
 
-        printf("Me cago en tu puta madre 5.0.1 \n");
         q->num_hilo = i;
-        printf("Me cago en tu puta madre 5.1 \n");
         q->s = sock_pasivo;
-        printf("Me cago en tu puta madre 5.2 \n");
         pthread_create(&hilos_aten[i], NULL, (void *)AtencionPeticiones, q);
-        printf("Me cago en tu puta madre 5.3 \n");
 
         
         //*(hilos_aten+i)
         //hilos_aten[i]
     }
-    printf("Me cago en tu puta madre 6 \n");
     // Y creamos cada uno de los hilos trabajadores
     for (i = 0; i < num_hilos_work; i++)
     {
         // A RELLENAR (?)
-        printf("I work = %d\n", i);
         id = malloc(sizeof(int));
         *id = i;
 
@@ -527,7 +498,6 @@ int main(int argc, char *argv[])
 
     }
 
-    printf("Me cago en tu puta madre 7 \n");
 
     // Esperamos a que terminen todos los hilos
     for (i = 0; i < num_hilos_aten; i++)
@@ -535,7 +505,6 @@ int main(int argc, char *argv[])
         pthread_join(hilos_aten[i], NULL);
     }
 
-    printf("Me cago en tu puta madre 8 \n");
     for (i = 0; i < num_hilos_work; i++)
     {
         pthread_join(hilos_work[i], NULL);

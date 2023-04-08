@@ -72,7 +72,7 @@ void init() {
     // RELLENA ESTE HUECO
     if (contabilidad_eventos == NULL){
         
-        **contabilidad_eventos = (int **) malloc(numfacilities * sizeof(int *));
+        contabilidad_eventos = (int **) malloc(numfacilities * sizeof(int *));
         
         for (int i = 0; i < numfacilities; i++) {
             contabilidad_eventos[i] = (int *) malloc(numlevels * sizeof(int));
@@ -93,14 +93,14 @@ Resultado * inicializar_sislog_1_svc(faclevel *q, struct svc_req *pet)
     // y si no lo está se devuelve un mensaje de error.
     // En caso de estar dentro de los limites, llama a la función anterior para incializar
     // la matriz de recuento de eventos y se devuelve un resultado de exito
-    if ((valida_numero(q->facilidad) && q->facilidad < 0 || valida_numero(q->facilidad) && q->facilidad > 7))
+    if ((valida_numero((char *)&q->facilidad) && q->facilidad < 0 || valida_numero((char *)&q->facilidad) && q->facilidad > MAXFACILITIES))
     {
         r.caso=1;
         r.Resultado_u.msg="ERROR: Al inicializar sislog, número de facilidad no admisible.";
     }
     // Continúa tú...
     // RELLENA ESTE HUECO
-    if ((valida_numero(q->nivel) && q->nivel < 0 || valida_numero(q->nivel) && q->nivel > 7))
+    if ((valida_numero((char *)&q->nivel) && q->nivel < 0 || valida_numero((char *)&q->nivel) && q->nivel > MAXLEVELS))
     {
         r.caso=1;
         r.Resultado_u.msg="ERROR: Al inicializar sislog, número de nivel no admisible.";
@@ -131,19 +131,23 @@ Resultado * registrar_evento_1_svc(eventsislog *evt, struct svc_req * peticion)
     // un resultado de exito
 
     // RELLENA ESTE HUECO
-        if (valida_numero(evt->facilidad) && evt->facilidad < 0 || valida_numero(evt->facilidad) && evt->facilidad > 7){
+        if (valida_numero((char *)&evt->facilidad) && evt->facilidad < 0 || valida_numero((char *)&evt->facilidad) && evt->facilidad > MAXFACILITIES){
             res.caso = 1;
             res.Resultado_u.msg = "ERROR: Número de facilidad no admisible";
 
 
         }
 
-        if (valida_numero(evt->nivel) && evt->nivel < 0 || valida_numero(evt->nivel) && evt->nivel > 7){
+        if (valida_numero((char *)&evt->nivel) && evt->nivel < 0 || valida_numero((char *)&evt->nivel) && evt->nivel > MAXLEVELS){
             res.caso = 1;
             res.Resultado_u.msg = "ERROR: Número de nivel no admisible";
 
 
         }
+
+        timeraw = time(NULL);
+        fechahora = ctime(&timeraw);
+        fechahora[strlen(fechahora) - 1] = '\0';
 
         fp = fopen(facilities_file_names[evt->facilidad],"a");
 

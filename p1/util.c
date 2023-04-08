@@ -30,7 +30,6 @@ int valida_ip(char *ip)
     
     // Convertir la dirección IP en formato de cadena a una estructura de in_addr
     if (inet_pton(AF_INET, ip, &addr) <= 0) {
-        log_debug(printf("%s no es una dirección IP válida.\n", ip));
         return 0;
     }
 

@@ -17,31 +17,25 @@ todo : $(CLIENTE) $(SERVIDOR) $(INICIALIZADOR)
 # Generacion del cliente y del servidor
 #**************************************************
 
-$(CLIENTE) : # A RELLENAR DEPENDENCIAS
-	# A RELLENAR COMANDOS
-	|
-	|
+$(CLIENTE) : cliente.c
+	$(CC) cliente.c util.c sislog_clnt.c sislog_xdr.c -o cliente $(LDFLAGS)
 
-$(INICIALIZADOR) : # A RELLENAR DEPENDENCIAS
-	# A RELLENAR COMANDOS
-	|
-	|
+$(INICIALIZADOR) : inicializador_sislog.c
+	$(CC) inicializador_sislog.c sislog_xdr.c sislog_clnt.c util.c -o inicializador_sislog 
 
-$(SERVIDOR) : # A RELLENAR DEPENDENCIAS
-	# A RELLENAR COMANDOS
-	|
-	|
+$(SERVIDOR) : servicios.c
+	$(CC) -o servidor servicios.c sislog_svc.c util.c sislog_xdr.c
 
-sislog_svc.o : sislog_svc.c sislog.h
+sislog_svc.o : sislog.h sislog_svc.c 
 	$(CC) $(CFLAGS) -c sislog_svc.c 
 
 servicios.o: servicios.c sislog.h util.h
 	$(CC) $(CFLAGS) -c servicios.c
 
-sislog_clnt.o : sislog_clnt.c sislog.h
+sislog_clnt.o : sislog.h sislog_clnt.c 
 	$(CC) $(CFLAGS) -c sislog_clnt.c
 
-sislog_xdr.o : sislog_xdr.c sislog.h
+sislog_xdr.o : sislog.h sislog_xdr.c 
 	$(CC) $(CFLAGS) -c sislog_xdr.c
 
 cliente.o : cliente.c sislog.h util.h 
@@ -54,16 +48,15 @@ util.o : util.c util.h
 	$(CC) $(CFLAGS) -c util.c
 
 sislog.h: sislog.x
-	# A RELLENAR COMANDOS
-	|
-	|
+	$(RPCGEN) sislog.x
 
 #**************************************************
 # Utilidades
 #**************************************************
 
 limpia : 
-	rm -f *.o	
+	rm -f *.o *.dat	
+	
 
 cleanall: limpia
 	rm -f sislog_*

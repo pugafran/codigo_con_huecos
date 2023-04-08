@@ -47,26 +47,34 @@ void *Cliente(datos_hilo *p)
     char * loc;
 
     eventsislog evt;
+    //evt.msg = malloc(sizeof(texto));
+    evt.msg = (char *)malloc(TAMMSG*sizeof(char));
 
     id_cliente = p->id_cliente;   // Capturar el id del cliente en una variable local
     fp=p->fp;
     free(p);          // Ya no necesitamos el parámetro recibido, lo liberamos
 
+    if (fp == NULL) {
+    fprintf(stderr, "Error: could not open event file.\n");
+    exit(1);
+    }
+
+    // creamos un hadler de conexión con el servidor RPC
+    // y comprobamos que se ha creado correctamente
+    cl = clnt_create(ip_sislog, SISLOG, PRIMERA, "tcp");
+    if (cl == NULL) {
+        clnt_pcreateerror(ip_sislog);
+        exit(1);
+    }
 
     // Bucle de lectura de eventos
     do
     {
-        // creamos un hadler de conexión con el servidor RPC
-        // y comprobamos que se ha creado correctamente
-        cl = clnt_create(ip_sislog, SISLOG, PRIMERA, "tcp");
-        if (cl == NULL) {
-        clnt_pcreateerror(ip_sislog);
-        exit(1);
-        }
-
+        
         // leemos mediante exclusión la siguiente línea del fichero cuyo *FILE
         // recibimos en uno de los campos de de la estructura datos_hilo
         // RELLENA ESTE HUECO
+        pthread_mutex_init(&mutex, NULL);
         pthread_mutex_lock(&mutex);
         s = fgets(buffer, TAMLINEA, fp);
         pthread_mutex_unlock(&mutex);
@@ -78,25 +86,29 @@ void *Cliente(datos_hilo *p)
         {
             // Tokenizar cadena y rellenado de la estructura de datos
             // RELLENA ESTE HUECO
-            p = (datos_hilo *)malloc(sizeof(datos_hilo));
-        printf("\nPrintf informativo - 2\n");
+             
+            //p = (datos_hilo *)malloc(sizeof(datos_hilo));
         //p->facilidad = malloc(sizeof(dato_cola));
-    
+        
         
         
         token = strtok_r(buffer, ":", &loc);
 
-        printf("%s",token);
+        
 
         evt.facilidad = atoi(token); // Se debe convertir a entero  (token-48?)
 
 
         token = strtok_r(NULL, ":", &loc);
-        printf("%s",token);
+        
         evt.nivel = atoi(token); // Se debe convertir a entero
 
         token = strtok_r(NULL, ":", &loc);
         strcpy(evt.msg, token);
+        
+
+        if(strcmp(evt.msg, token) != 0)
+            fprintf(stderr, "Error: en strcmp\n");
 
 
 
@@ -110,8 +122,11 @@ void *Cliente(datos_hilo *p)
             registrar_evento_1(&evt,cl);
 
         }
-        clnt_destroy(cl);
+        
     } while(s);
+
+    clnt_destroy(cl);
+    free(evt.msg);
     return NULL;
 }
 
@@ -158,6 +173,8 @@ int  main(int argc,char *argv[])
         exit(6);
     }
 
+    
+
 
     // Creación de un hilo para cada cliente. Estos sí reciben como parámetro
     // un puntero a entero que será su id_cliente. Se crea dinámicamente uno
@@ -167,6 +184,8 @@ int  main(int argc,char *argv[])
         // RELLENA ESTE HUECO
 
         q = malloc(sizeof(datos_hilo));
+        q->fp = fp;
+        q->id_cliente = i;
         
 
         pthread_create(&th[i], NULL, (void *)Cliente, q);

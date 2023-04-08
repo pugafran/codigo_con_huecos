@@ -88,44 +88,37 @@ void destruir_cola(Cola *cola)
 void insertar_dato_cola(Cola *cola, dato_cola * dato)
 {
     // A RELLENAR
-	printf("\nInsertar dato cola - 1\n");
 
     if (cola == NULL) {
         perror("Cola no inicializada");
         exit(EXIT_FAILURE);
     }
 
-	printf("\nInsertar dato cola - 2\n");
 
     if (sem_wait(&(cola->num_huecos)) < 0) {
         perror("Al esperar semáforo");
         exit(EXIT_FAILURE);
     }
 
-	printf("\nInsertar dato cola - 3\n");
 
     if (pthread_mutex_lock(&(cola->mutex_head)) != 0) {
         perror("Al bloquear mutex");
         exit(EXIT_FAILURE);
     }
 
-	printf("\nInsertar dato cola - 4\n");
 	
     cola -> datos[cola -> head] = dato;
 
-	printf("\nInsertar dato cola - 5\n");
 	
 
     cola -> head = (cola -> head + 1) % cola -> tam_cola;
 
-	printf("\nInsertar dato cola - 6\n");
 
     if (pthread_mutex_unlock(&(cola->mutex_head)) != 0) {
         perror("Al desbloquear mutex");
         exit(EXIT_FAILURE);
     }
 	
-	printf("\nInsertar dato cola - 7\n");
 	
 
     if (sem_post(&(cola->num_ocupados)) < 0) {
@@ -133,7 +126,6 @@ void insertar_dato_cola(Cola *cola, dato_cola * dato)
         exit(EXIT_FAILURE);
     }
 
-	printf("\nInsertar dato cola - 8\n");
 	
 }
 
@@ -142,54 +134,41 @@ dato_cola * obtener_dato_cola(Cola *cola)
 {
     // A RELLENAR
 
-	printf("\nObtener dato cola - 1\n");
 
     dato_cola *datoExtraido = (dato_cola *)malloc(sizeof(dato_cola));
 
-	printf("\nObtener dato cola - 2\n");
 
     if (cola == NULL) {
         perror("Cola no inicializada");
         exit(EXIT_FAILURE);
     }
-	printf("\nObtener dato cola - 3\n");
 
     if (sem_wait(&(cola->num_ocupados)) < 0) {
         perror("Al esperar semáforo");
         exit(EXIT_FAILURE);
     }
 
-	printf("\nObtener dato cola - 4\n");
 
     if (pthread_mutex_lock(&(cola->mutex_tail)) != 0) {
         perror("Al bloquear mutex");
         exit(EXIT_FAILURE);
     }
 
-	printf("\nObtener dato cola - 5\n");
 
     //datoExtraido = cola->datos[cola->tail];
     memcpy(datoExtraido, cola->datos[cola->tail], sizeof(dato_cola));
 
-	printf("\nObtener dato cola - 6\n");
-
 	cola->tail = (cola->tail+1)%cola->tam_cola;
-
-	printf("\nObtener dato cola - 7\n");
 
     if (pthread_mutex_unlock(&(cola->mutex_tail)) != 0) {
         perror("Al desbloquear mutex");
         exit(EXIT_FAILURE);
     }
 
-	printf("\nObtener dato cola - 8\n");
-
     if (sem_post(&(cola->num_huecos)) < 0) {
         perror("Al incrementar semáforo");
         exit(EXIT_FAILURE);
     }
-
-	printf("\nObtener dato cola - 9\n");
 
     return datoExtraido;
    

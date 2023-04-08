@@ -65,7 +65,7 @@ void procesa_argumentos(int argc,char *argv[])
     ip_syslog = argv[1];
     if (inet_pton(AF_INET, ip_syslog, &addr) <= 0) {
         fprintf(stderr, "%s no es una dirección IP válida.\n", ip_syslog);
-        return 0;
+        exit(1);
     }
 
     puerto_syslog = atoi(argv[2]);
@@ -131,42 +131,31 @@ void *hilo_lector(datos_hilo *p)
   char buffer[TAMLINEA];
   char *s;
   int sock_dat;
-  printf("\nSector hilo 1\n");
  
   do
   {
-      printf("\nSector hilo 1.5\n");
       bzero(buffer,TAMLINEA);
-      printf("\nSector hilo 2\n");
       // Leer la siguiente linea del fichero con fgets
       // (haciendo exclusión mutua con otros hilos)
       // El fichero (ya abierto por main) se recibe en uno de los parámetros
       // A RELLENAR -----------------
       
       pthread_mutex_init(&mutex, NULL);
-      printf("\nSector hilo 3\n");
       pthread_mutex_lock(&mutex);
       s = fgets(buffer, TAMLINEA, p->fp);
       pthread_mutex_unlock(&mutex);
-        printf("\nSector hilo 4\n");
       if (s!=NULL)
       {
-          printf("\nSector hilo 4.5\n");
-          printf("%s",s);
           // La IP y puerto del servidor están en una estructura sockaddr_in
           // que se recibe en uno de los parámetros
           if (es_stream)  // Enviar la línea por un socket TCP
           {
             // A RELLENAR
             
-            printf("\nSector hilo 4.7\n");
             sock_dat = socket(PF_INET, SOCK_STREAM, 0);
-            printf("\nSector hilo 4.8\n");
             ((struct sockaddr_in*) p->dserv)->sin_family = AF_INET;
-            printf("\nSector hilo 4.9\n");
             ((struct sockaddr_in*) p->dserv)->sin_addr.s_addr = inet_addr(ip_syslog);
             ((struct sockaddr_in*) p->dserv)->sin_port = htons(puerto_syslog);
-            printf("\nSector hilo 5\n");
             int conexion = connect(sock_dat, p->dserv, sizeof(*(p->dserv)));
 
             if (conexion == -1){
@@ -174,7 +163,6 @@ void *hilo_lector(datos_hilo *p)
                 exit(1);
             }
 
-            printf("\nSector hilo 6\n");
             int bytes_enviados = send(sock_dat, s, TAMLINEA, 0); 
             
             if (bytes_enviados == -1){
@@ -187,14 +175,13 @@ void *hilo_lector(datos_hilo *p)
           }
           else // Enviar la línea por un socket UDP
           {
-            printf("\nSector UDP WTF\n");
             // A RELLENAR
             sock_dat = socket(PF_INET, SOCK_DGRAM, 0);
             ((struct sockaddr_in*) &p->dserv)->sin_family = AF_INET; 
             ((struct sockaddr_in*) &p->dserv)->sin_addr.s_addr = inet_addr(ip_syslog);
             ((struct sockaddr_in*) &p->dserv)->sin_port = htons(puerto_syslog);
 
-            int bytes_enviados = sendto(sock_dat, buffer, TAMLINEA, 0, &p->dserv, sizeof(*(p->dserv)));
+            int bytes_enviados = sendto(sock_dat, buffer, TAMLINEA, 0, (struct sockaddr*)&p->dserv, sizeof(*(p->dserv)));
 
             if (bytes_enviados == -1){
                 fprintf(stderr, "Error al enviar los datos\n");
@@ -203,7 +190,6 @@ void *hilo_lector(datos_hilo *p)
 
           }
           close(sock_dat);
-          printf("%s",s); // Para depuración, imprimios la línea que hemos enviado
       }
       
   }
@@ -244,29 +230,24 @@ void main(int argc, char * argv[])
 
     // creamos espacio para los objetos de datos de hilo
     // A RELLENAR
-    printf("\nSector 1\n");
     q = malloc(sizeof(datos_hilo));
     q->dserv = malloc(sizeof(struct sockaddr));
     th = (pthread_t *)malloc(nhilos * sizeof(pthread_t));
-    printf("\nSector 2\n");
 
     // incicializamos los datos que le vamos a pasar como parámetro a los hilo_lector
     // (se pasa a todos el mismo parámetro)
     // A RELLENAR
     
     q->fp = fp;
-    printf("\nSector 3\n");
 
     for (i=0;i<nhilos;i++)
     {
       // lanzamos el hilo lector
       // A RELLENAR
      
-      printf("\nSector 4\n");
       pthread_create(&th[i], NULL, (void *)hilo_lector, q);
 
     }
-    printf("\nSector 5\n");
     // Una vez lanzados todos, hacemos un join sobre cada uno de ellos
     for (i=0;i<nhilos;i++)
     {

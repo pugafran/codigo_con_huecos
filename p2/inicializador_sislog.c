@@ -42,6 +42,12 @@ int main(int argc,char *argv[])
    // Conectamos con el servidor RPC pasándole los parámetros apropiados
    // para que inicialice sus estructuras de datos con el tamaño requerido
    // RELLENA ESTE HUECO
+   cl= clnt_create(ip_sislog, SISLOG, PRIMERA, "tcp");
+   if(cl == NULL){
+      clnt_pcreateerror("No puedo inicializar cliente");
+      exit(1);
+   }
+
    printf("\nP1\n");
    params.facilidad = atoi((char *) argv[1]);
    params.nivel = atoi((char *) argv[2]);
