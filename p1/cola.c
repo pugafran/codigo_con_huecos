@@ -170,4 +170,6 @@ dato_cola *obtener_dato_cola(Cola *cola)
 	}
 
 	return datoExtraido;
+
+	
 }

@@ -175,7 +175,14 @@ void *Cliente(datos_hilo *p)
             // Enviar evento por RPC e imprimir el velor retornado
             // y liberar seguidamente las estructuras de datos utilizadas
             // RELLENA ESTE HUECO
-            registrar_evento_1(&evt, cl);
+            res = registrar_evento_1(&evt, cl);
+
+            if(res->caso == 0)
+                sprintf(msg, "\nRegistrar evento devuelve: %d\n", res->Resultado_u.valor);
+            else
+                sprintf(msg, "\nRegistrar evento devuelve: %s\n", res->Resultado_u.msg);
+
+            log_debug(msg);
         }
 
     } while (s);

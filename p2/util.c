@@ -20,11 +20,11 @@ int valida_numero(char *str)
     // Si el carácter no es un dígito numérico, devuelve 0
     if (!isdigit(str[i]))
     {
-      return 0;
+      return FALSO;
     }
   }
   // Si todos los caracteres son dígitos numéricos, devuelve 1
-  return 1;
+  return CIERTO;
 }
 
 // Función de utilidad que valida si una cadena de caracteres representa

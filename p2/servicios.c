@@ -95,20 +95,26 @@ Resultado *inicializar_sislog_1_svc(faclevel *q, struct svc_req *pet)
     // y si no lo está se devuelve un mensaje de error.
     // En caso de estar dentro de los limites, llama a la función anterior para incializar
     // la matriz de recuento de eventos y se devuelve un resultado de exito
-    if ((valida_numero((char *)&q->facilidad) && q->facilidad < 0) || (valida_numero((char *)&q->facilidad) && q->facilidad > MAXFACILITIES))
+    if (q->facilidad < 0 || q->facilidad > MAXFACILITIES)
     {
         r.caso = 1;
         r.Resultado_u.msg = "ERROR: Al inicializar sislog, número de facilidad no admisible.";
+        return &r;
     }
     // Continúa tú...
     // RELLENA ESTE HUECO
-    if ((valida_numero((char *)&q->nivel) && q->nivel < 0) || (valida_numero((char *)&q->nivel) && q->nivel > MAXLEVELS))
+    if (q->nivel < 0 || q->nivel > MAXLEVELS)
     {
         r.caso = 1;
         r.Resultado_u.msg = "ERROR: Al inicializar sislog, número de nivel no admisible.";
+        return &r;
     }
 
+    numfacilities = q->facilidad;
+    numlevels = q->nivel;
     init();
+    r.caso = 0;
+    r.Resultado_u.valor = 0;
 
     // Antes de retornar, para depuración, mostramos por pantalla la matriz de
     // contadores llamando a la función mostrar_recuento_eventos (util.c)
@@ -123,6 +129,7 @@ Resultado *registrar_evento_1_svc(eventsislog *evt, struct svc_req *peticion)
     FILE *fp;
     char *fechahora;
     time_t timeraw;
+    char *aux[MAXMSG];
 
     // comprueba si el evento que se desea registrar tiene un numero de facilidad
     // y nivel dentro de los admisibles (retorna un mensaje de error si no)
@@ -133,16 +140,21 @@ Resultado *registrar_evento_1_svc(eventsislog *evt, struct svc_req *peticion)
     // un resultado de exito
 
     // RELLENA ESTE HUECO
-    if ((valida_numero((char *)&evt->facilidad) && evt->facilidad < 0) || (valida_numero((char *)&evt->facilidad) && evt->facilidad > MAXFACILITIES))
+    if ((evt->facilidad < 0) || (evt->facilidad > numfacilities - 1))
     {
         res.caso = 1;
-        res.Resultado_u.msg = "ERROR: Número de facilidad no admisible";
+        sprintf(res.Resultado_u.msg, "ERROR: Número de facilidad no admisible (Facilidad: %d)", evt->facilidad);
+        return &res;
+        
     }
 
-    if ((valida_numero((char *)&evt->nivel) && evt->nivel < 0) || (valida_numero((char *)&evt->nivel) && evt->nivel > MAXLEVELS))
+    if ((evt->nivel < 0) || (evt->nivel > numlevels - 1))
     {
+        
         res.caso = 1;
-        res.Resultado_u.msg = "ERROR: Número de nivel no admisible";
+        sprintf(aux, "ERROR: Número de nivel no admisible (Nivel: %d)\n", evt->nivel);
+        res.Resultado_u.msg = aux;
+        return &res;
     }
 
     timeraw = time(NULL);
@@ -177,7 +189,7 @@ Resultado *registrar_evento_1_svc(eventsislog *evt, struct svc_req *peticion)
     return (&res);
 }
 
-// Funciones de apoyo para las estadísticas
+// Funciones de apoyo para las estadísticas 
 Resultado *obtener_total_facilidad_1_svc(int *fac, struct svc_req *peticion)
 {
     static Resultado res;

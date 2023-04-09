@@ -294,11 +294,7 @@ void *Worker(int *id)
 
         fp = fopen(facilities_file_names[evt->facilidad], "a");
 
-        if (pthread_mutex_unlock(&mfp[evt->facilidad]) < 0){
-            fprintf(stderr, "Error al bloquear el mutex %s\n", facilities_file_names[evt->facilidad]);
-            exit(1);
 
-        }
 
         if (fp == NULL)
         {
@@ -312,6 +308,12 @@ void *Worker(int *id)
         {
             fprintf(stderr, "Error al cerrar el archivo %s\n", facilities_file_names[evt->facilidad]);
             exit(1);
+        }
+
+        if (pthread_mutex_unlock(&mfp[evt->facilidad]) < 0){
+            fprintf(stderr, "Error al desbloquear el mutex %s\n", facilities_file_names[evt->facilidad]);
+            exit(1);
+
         }
 
 
@@ -449,6 +451,7 @@ void *AtencionPeticiones(param_hilo_aten *q)
             }
 
         insertar_dato_cola(&cola_eventos, p);
+        
     }
 }
 

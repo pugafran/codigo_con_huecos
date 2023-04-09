@@ -143,10 +143,11 @@ void *hilo_lector(datos_hilo *p)
     // El fichero (ya abierto por main) se recibe en uno de los parámetros
     // A RELLENAR -----------------
 
-    pthread_mutex_init(&mutex, NULL);
+
     pthread_mutex_lock(&mutex);
     s = fgets(buffer, TAMLINEA, p->fp);
     pthread_mutex_unlock(&mutex);
+  
     if (s != NULL)
     {
       // La IP y puerto del servidor están en una estructura sockaddr_in
@@ -231,6 +232,8 @@ int main(int argc, char *argv[])
     exit(6);
   }
 
+  pthread_mutex_init(&mutex, NULL);
+
   // creamos espacio para los objetos de datos de hilo
   // A RELLENAR
   q = malloc(sizeof(datos_hilo));
@@ -256,6 +259,7 @@ int main(int argc, char *argv[])
     pthread_join(th[i], NULL);
   }
   // Al llegar aquí, todos los hilos han terminado
+  pthread_mutex_destroy(&mutex);
   fclose(fp);
 
   return 0;
