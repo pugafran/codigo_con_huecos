@@ -143,7 +143,7 @@ Resultado *registrar_evento_1_svc(eventsislog *evt, struct svc_req *peticion)
     if ((evt->facilidad < 0) || (evt->facilidad > numfacilities - 1))
     {
         res.caso = 1;
-        sprintf(res.Resultado_u.msg, "ERROR: Número de facilidad no admisible (Facilidad: %d)", evt->facilidad);
+        sprintf(res.Resultado_u.msg, "ERROR: Número de facilidad no admisible (Facilidad: %d) [No se almacena]\n", evt->facilidad);
         return &res;
         
     }
@@ -152,7 +152,7 @@ Resultado *registrar_evento_1_svc(eventsislog *evt, struct svc_req *peticion)
     {
         
         res.caso = 1;
-        sprintf(aux, "ERROR: Número de nivel no admisible (Nivel: %d)\n", evt->nivel);
+        sprintf(aux, "ERROR: Número de nivel no admisible (Nivel: %d) [No se almacena]\n", evt->nivel);
         res.Resultado_u.msg = aux;
         return &res;
     }

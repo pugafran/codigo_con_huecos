@@ -178,9 +178,9 @@ void *Cliente(datos_hilo *p)
             res = registrar_evento_1(&evt, cl);
 
             if(res->caso == 0)
-                sprintf(msg, "\nRegistrar evento devuelve: %d\n", res->Resultado_u.valor);
+                sprintf(msg, "Registrar evento devuelve: %d\n", res->Resultado_u.valor);
             else
-                sprintf(msg, "\nRegistrar evento devuelve: %s\n", res->Resultado_u.msg);
+                sprintf(msg, "Registrar evento devuelve: %s\n", res->Resultado_u.msg);
 
             log_debug(msg);
         }
