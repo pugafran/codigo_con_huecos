@@ -15,7 +15,7 @@ Cliente de RPC que simula las operaciones de varios clientes del servidor de log
 // Variables globales
 
 // IP del proceso sislog
-char *ip_sislog;
+char *ip_sislog = NULL;
 
 // numero de clientes
 int num_clientes;
@@ -36,21 +36,21 @@ void *Cliente(datos_hilo *p)
 {
     // Implementación del hilo que genera los eventos que se envían al
     // servidor via RPC
-    CLIENT *cl;
-    FILE *fp;
+    CLIENT *cl = NULL;
+    FILE *fp = NULL;
     int id_cliente;
     char buffer[TAMLINEA]; // Buffer de lectura de lineas del fichero de eventos
     char msg[TAMLINEA * 2];
 
-    Resultado *res;
-    char *s;
-    char *token;
-    char *loc;
+    Resultado *res = NULL;
+    char *s = NULL;
+    char *token = NULL;
+    char *loc = NULL;
 
     /* Para saber si se está en el final de fichero de eventos.txt
-    
+
     */
-    char *ptr;
+    char *ptr = NULL;
     int i, j;
 
     eventsislog evt;
@@ -111,25 +111,52 @@ void *Cliente(datos_hilo *p)
 
             strcpy(evt.msg, token);
 
-            ptr = strchr(evt.msg, '\n');
-
+            // Comprobar si se ha copiado bien
             if (strcmp(evt.msg, token) != 0)
             {
                 fprintf(stderr, "Error: en strcmp\n");
             }
 
+            /*
+                [eventos.txt]
+                0:0:Cero (\n)
+                1:1:Uno (\n)
+                2:2:Dos (\n)
+                3:3:Tres (\n)
+                4:4:Cuatro (\n)
+                5:5:Cinco (\n)
+                6:6:Seis (\n)
+                7:7:Siete (\n)
+                8:7:Ocho (\n)
+                9:7:Nueve (EOF)
+                [/eventos.txt]
+
+                Si no se trata correctamente el último facXX.dat de eventos.txt, las lineas se van a guardar consecutivamente sin saltos
+                de linea, es por ello que se arregla en el posterior código.
+
+                Buscamos el salto de línea dentro de la linea recogida del fichero eventos.txt, como es una sucesión de líneas, todas
+                excepto la última tienen salto de línea por lo que ptr será != null en todas las ocasiones excepto para la última linea.
+
+
+
+            */
+
+            // ¿Contiene msg '\n'?
+            ptr = strchr(evt.msg, '\n');
+
+            // Si no lo contiene, es el último fichero
             if (ptr == NULL)
             {
 
                 char *new_str = "\n";
 
-                // Buscamos el final del string
+                // Buscamos el final de msg
                 while (evt.msg[i] != '\0')
                 {
                     i++;
                 }
 
-                // Copiamos el nuevo texto al final del string
+                // Copiamos el \n al final de msg
                 j = 0;
                 while (new_str[j] != '\0')
                 {
@@ -161,9 +188,9 @@ void *Cliente(datos_hilo *p)
 int main(int argc, char *argv[])
 {
     register int i; // Indice para bucles
-    pthread_t *th;
-    datos_hilo *q;
-    FILE *fp;
+    pthread_t *th = NULL;
+    datos_hilo *q = NULL;
+    FILE *fp = NULL;
     char msg[TAMLINEA * 2];
 
     if (argc != 4)

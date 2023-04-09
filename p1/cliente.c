@@ -131,7 +131,6 @@ void salir_bien(int s)
 
 void *hilo_lector(datos_hilo *p)
 {
-  int enviados;
   char buffer[TAMLINEA];
   char *s;
   int sock_dat;
@@ -196,9 +195,11 @@ void *hilo_lector(datos_hilo *p)
     }
 
   } while (s); // Mientras no se llegue al final del fichero
+
+  return NULL;
 }
 
-void main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
   // La función main crea los hilos lector, pasándoles los parámetros necesarios,
   // y espera a que terminen
@@ -208,12 +209,13 @@ void main(int argc, char *argv[])
   pthread_t *th;
   datos_hilo *q = NULL;
 
-  int sock_dat, enviados;
+  //int sock_dat;
+  //int enviados;
 
-  struct sockaddr_in d_serv;
+  //struct sockaddr_in d_serv;
 
-  socklen_t ldir;
-  char buffer[50];
+  //socklen_t ldir;
+  //char buffer[50];
 
   // Instalar la rutina de tratamiento de la señal SIGINT
   // A RELLENAR
@@ -255,4 +257,6 @@ void main(int argc, char *argv[])
   }
   // Al llegar aquí, todos los hilos han terminado
   fclose(fp);
+
+  return 0;
 }

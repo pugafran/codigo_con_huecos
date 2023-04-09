@@ -60,11 +60,11 @@ int num_hilos_work;
 
 // Puntero a la dirección de comienzo del array de datos de hilo
 // de los hilos de atencion de peticiones
-pthread_t *hilos_aten;
+pthread_t *hilos_aten = NULL;
 
 // Puntero a la dirección de comienzo del array de datos de hilo
 // de los hilos trabajadores
-pthread_t *hilos_work;
+pthread_t *hilos_work = NULL;
 
 // Arrays para la traducción de nombres de niveles y de facilities
 // y para obtener los nombres de los ficheros de registro
@@ -242,11 +242,13 @@ void procesa_argumentos(int argc, char *argv[])
 void *Worker(int *id)
 {
     int id_worker;
-    FILE *fp;
-    dato_cola *evt;
+    FILE *fp = NULL;
+    dato_cola *evt = NULL;
     char msg[2048];
-    char *fechahora;
+    char *fechahora = NULL;
     time_t timeraw;
+
+
 
     // Hacemos copia del parámetro recibido
     id_worker = *id;
@@ -268,13 +270,13 @@ void *Worker(int *id)
         // A RELLENAR
         evt = (dato_cola *)obtener_dato_cola(&cola_eventos);
 
-        if (valida_numero(&evt->facilidad) && evt->facilidad < 0 || valida_numero(&evt->facilidad) && evt->facilidad > 7)
+        if ((valida_numero((char *)&evt->facilidad) && evt->facilidad < 0) || (valida_numero((char *)&evt->facilidad) && evt->facilidad > NUMFACILITIES))
         {
             fprintf(stderr, "Número de facilidad no admisible\n");
             exit(1);
         }
 
-        if (valida_numero(&evt->nivel) && evt->nivel < 0 || valida_numero(&evt->nivel) && evt->nivel > 7)
+        if ((valida_numero((char *)&evt->nivel) && evt->nivel < 0) || (valida_numero((char *)&evt->nivel) && evt->nivel > NUMLEVELS))
         {
             fprintf(stderr, "Número de nivel no admisible\n");
             exit(1);
@@ -284,7 +286,19 @@ void *Worker(int *id)
         fechahora = ctime(&timeraw);
         fechahora[strlen(fechahora) - 1] = '\0';
 
+        if (pthread_mutex_lock(&mfp[evt->facilidad]) < 0){
+            fprintf(stderr, "Error al bloquear el mutex %s\n", facilities_file_names[evt->facilidad]);
+            exit(1);
+
+        }
+
         fp = fopen(facilities_file_names[evt->facilidad], "a");
+
+        if (pthread_mutex_unlock(&mfp[evt->facilidad]) < 0){
+            fprintf(stderr, "Error al bloquear el mutex %s\n", facilities_file_names[evt->facilidad]);
+            exit(1);
+
+        }
 
         if (fp == NULL)
         {
@@ -299,6 +313,8 @@ void *Worker(int *id)
             fprintf(stderr, "Error al cerrar el archivo %s\n", facilities_file_names[evt->facilidad]);
             exit(1);
         }
+
+
     }
 }
 
@@ -315,6 +331,10 @@ void *AtencionPeticiones(param_hilo_aten *q)
     int s;        // Variable local para almacenar el socket que se recibe como parámetro
     int num_hilo; // Variable local para almacenar el numero de hilo que se recibe como parámetro
                   // (no usada, pero puedes usarla para imprimir mensajes de depuración)
+
+    //
+    char *ptr = NULL;
+    int i, j;
 
     // Información de depuración
     sprintf(msg, "Comienza el Hilo de Atencion de Peticiones %d\n", q->num_hilo);
@@ -350,13 +370,13 @@ void *AtencionPeticiones(param_hilo_aten *q)
             int len;
             len = sizeof(d_cliente);
 
-            if (recibidos = recvfrom(s, buffer, TAMMSG, 0, (struct sockaddr *)&d_cliente, &len) == -1)
+            if ((recibidos = recvfrom(s, buffer, TAMMSG, 0, (struct sockaddr *)&d_cliente, &len)) == -1)
             {
                 fprintf(stderr, "Error al recibir vía UDP\n");
                 exit(1);
             }
 
-            // buffer[recibidos] = 0;
+            buffer[recibidos] = 0;
         }
         // Una vez recibido el mensaje, es necesario separar sus partes,
         // guardarlos en la estructura adecuada, y poner esa estructura en la cola
@@ -375,6 +395,58 @@ void *AtencionPeticiones(param_hilo_aten *q)
 
         token = strtok_r(NULL, ":", &loc);
         strcpy(p->msg, token);
+
+        /*
+            [eventos.txt]
+            0:0:Cero (\n)
+            1:1:Uno (\n)
+            2:2:Dos (\n)
+            3:3:Tres (\n)
+            4:4:Cuatro (\n)
+            5:5:Cinco (\n)
+            6:6:Seis (\n)
+            7:7:Siete (\n)
+            8:7:Ocho (\n)
+            9:7:Nueve (EOF)
+            [/eventos.txt]
+            
+            Si no se trata correctamente el último facXX.dat de eventos.txt, las lineas se van a guardar consecutivamente sin saltos
+            de linea, es por ello que se arregla en el posterior código.
+
+            Buscamos el salto de línea dentro de la linea recogida del fichero eventos.txt, como es una sucesión de líneas, todas
+            excepto la última tienen salto de línea por lo que ptr será != null en todas las ocasiones excepto para la última linea.
+
+            
+        
+        */
+
+        // ¿Contiene msg '\n'?
+        ptr = strchr(p->msg, '\n');
+
+        //Si no lo contiene, es el último fichero
+        if (ptr == NULL)
+            {
+
+                char *new_str = "\n";
+                i = 0;
+                
+                // Buscamos el final de msg
+                while (p->msg[i] != '\0')
+                {
+                    i++;
+                }
+
+                // Copiamos el \n al final de msg
+                j = 0;
+                while (new_str[j] != '\0')
+                {
+                    p->msg[i] = new_str[j];
+                    i++;
+                    j++;
+                }
+
+                p->msg[i] = '\0';
+            }
 
         insertar_dato_cola(&cola_eventos, p);
     }

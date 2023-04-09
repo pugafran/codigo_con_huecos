@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-I. -pthread
+CFLAGS=-I. -pthread -Wall -ggdb
 
 all: sislog cliente
 
