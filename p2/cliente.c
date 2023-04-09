@@ -47,7 +47,9 @@ void *Cliente(datos_hilo *p)
     char *token;
     char *loc;
 
-    // Para saber si se está en el final de fichero de eventos.txt
+    /* Para saber si se está en el final de fichero de eventos.txt
+    
+    */
     char *ptr;
     int i, j;
 
